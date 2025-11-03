@@ -86,9 +86,35 @@ const SUPABASE_ANON_KEY = '你的anon_key'
    - 获得网址,例如: `https://your-project.vercel.app`
    - 在手机或电脑上打开即可使用！
 
-### 第四步: 配置爬虫
+### 第四步: 配置爬虫 (两种方式任选其一)
 
-1. **本地安装 Python 依赖**(如果需要本地运行爬虫)
+#### 方式A: 云端爬虫 - 无需安装Python ⭐推荐
+
+**适合没有Python环境的用户**
+
+1. **配置GitHub Secrets** (仅需一次)
+   - 访问: https://github.com/你的用户名/phd-application-tracker/settings/secrets/actions
+   - 添加 `SUPABASE_URL` 和 `SUPABASE_SERVICE_KEY`
+
+2. **手动触发爬虫**
+   - 访问: https://github.com/你的用户名/phd-application-tracker/actions
+   - 点击左侧 "手动触发爬虫"
+   - 点击 "Run workflow" → "Run workflow"
+   - 等待 2-3 分钟,完成!
+
+3. **查看结果**
+   - 在你的网站上点击 "导师列表"
+   - 应该能看到爬取的74位北理工导师
+
+**📖 详细教程**: [无需Python的爬虫使用指南](docs/无需Python的爬虫使用指南.md)
+
+---
+
+#### 方式B: 本地爬虫 - 需要Python环境
+
+**适合有Python环境的开发者**
+
+1. **安装 Python 依赖**
 
 ```bash
 cd crawler
