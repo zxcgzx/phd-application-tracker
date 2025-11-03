@@ -158,4 +158,28 @@ class TwoLevelScraper(BaseScraper):
                 if office:
                     professor['office_location'] = self.clean_text(office)
 
+        # 提取学院/部门
+        if 'department' in detail_config:
+            dept_config = detail_config['department']
+            if dept_config and len(dept_config) > 0:
+                department = self.extract_text_by_keyword(
+                    soup,
+                    dept_config[0].get('keywords', ['所在单位', '单位', '学院']),
+                    dept_config[0].get('extract_method', 'next_sibling_text')
+                )
+                if department:
+                    professor['department'] = self.clean_text(department)
+
+        # 提取教育背景
+        if 'education_background' in detail_config:
+            edu_config = detail_config['education_background']
+            if edu_config and len(edu_config) > 0:
+                education = self.extract_text_by_keyword(
+                    soup,
+                    edu_config[0].get('keywords', ['教育背景', '学历', 'Education']),
+                    edu_config[0].get('extract_method', 'parent_text')
+                )
+                if education:
+                    professor['education_background'] = self.clean_text(education)
+
         return professor

@@ -20,22 +20,121 @@ universities:
         - selector: "a[href^='mailto:']"
           extract: "href"
           pattern: "mailto:(.*)"
+        - pattern: "[a-zA-Z0-9._%+-]+@bit\\.edu\\.cn"
         - pattern: "[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}"
 
       phone:
         - pattern: "\\d{3,4}-\\d{7,8}|\\d{11}"
 
       title:
+        - keywords: ["职称", "Title"]
+          extract_method: "next_sibling_text"
         - pattern: "(教授|副教授|研究员|讲师)"
         - selector: "span.title, .职称, .title"
 
       research_areas:
-        - keywords: ["研究方向", "研究领域", "Research Interests"]
-          extract_method: "next_sibling_text"
+        - keywords: ["研究方向", "研究领域", "Research Interests", "研究兴趣"]
+          extract_method: "parent_text"
+        - pattern: true
+          keywords: ["研究方向", "研究领域"]
         - selector: ".research, .研究方向"
 
       office:
-        - keywords: ["办公室", "Office"]
+        - keywords: ["办公室", "Office", "办公地点"]
+          extract_method: "next_sibling_text"
+
+      department:
+        - keywords: ["所在单位", "单位", "学院"]
+          extract_method: "next_sibling_text"
+
+      education_background:
+        - keywords: ["教育背景", "学历", "Education"]
+          extract_method: "parent_text"
+
+  # 华北电力大学电气与电子工程学院
+  - name: "华北电力大学电气与电子工程学院"
+    url: "https://electric.ncepu.edu.cn/szdw/xyjj6/index.htm"
+    scraper_type: "two_level"
+    enabled: true
+    update_frequency: "weekly"
+
+    list_page:
+      container_selector: "ul li"  # 所有列表项
+      link_selector: "a"
+      name_selector: "a"
+
+    detail_page:
+      email:
+        - pattern: "[a-zA-Z0-9._%+-]+@ncepu\\.edu\\.cn"
+        - pattern: "[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}"
+
+      phone:
+        - pattern: "\\d{3,4}-\\d{7,8}|\\d{11}"
+
+      title:
+        - keywords: ["职称", "Title"]
+          extract_method: "next_sibling_text"
+        - pattern: "(教授|副教授|研究员|讲师)"
+
+      research_areas:
+        - keywords: ["研究方向", "Focus Area", "研究领域"]
+          extract_method: "parent_text"
+        - pattern: true
+          keywords: ["研究方向", "Focus Area"]
+        # 提取"Ø"符号标记的研究方向列表
+        - selector_all: "p:contains('研究方向') ~ p, p:contains('Focus Area') ~ p"
+
+      office:
+        - keywords: ["办公地址", "办公室", "Office"]
+          extract_method: "next_sibling_text"
+
+      department:
+        - keywords: ["所在单位", "单位"]
+          extract_method: "next_sibling_text"
+
+  # 北京航空航天大学自动化科学与电气工程学院
+  - name: "北京航空航天大学自动化科学与电气工程学院"
+    url: "https://dept3.buaa.edu.cn/szjs/yjsds/bssds.htm"
+    scraper_type: "two_level"
+    enabled: true
+    update_frequency: "weekly"
+
+    list_page:
+      container_selector: "ul li"  # 导师列表项
+      link_selector: "a"
+      name_selector: "a"
+
+    detail_page:
+      email:
+        - selector: "a[href^='mailto:']"
+          extract: "href"
+          pattern: "mailto:(.*)"
+        - pattern: "[a-zA-Z0-9._%+-]+@buaa\\.edu\\.cn"
+        - pattern: "[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}"
+
+      phone:
+        - pattern: "\\d{3,4}-\\d{7,8}|\\d{11}"
+
+      title:
+        - keywords: ["职称", "职务"]
+          extract_method: "next_sibling_text"
+        - pattern: "(教授|副教授|研究员|讲师|博士生导师)"
+        - selector: ".teacher_title, .title"
+
+      research_areas:
+        - keywords: ["研究方向", "研究领域", "研究兴趣", "Research Interests"]
+          extract_method: "parent_text"
+        - pattern: true
+          keywords: ["研究方向", "研究领域"]
+        # 从个人简介中提取研究关键词
+        - selector: ".profile_content, .introduction"
+
+      office:
+        - keywords: ["办公地点", "办公室", "Office"]
+          extract_method: "next_sibling_text"
+
+      department:
+        - keywords: ["所在单位", "单位", "学科"]
           extract_method: "next_sibling_text"
 
   # 更多学校可以在这里添加

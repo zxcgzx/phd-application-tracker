@@ -203,10 +203,11 @@ class BaseScraper:
         return None
 
     def extract_research_areas(self, soup: BeautifulSoup, config: List[Dict]) -> List[str]:
-        """提取研究方向"""
+        """提取研究方向（增强版，支持更多提取方式）"""
         areas = []
 
         for rule in config:
+            # 方法1：通过关键词定位后提取
             if 'keywords' in rule:
                 text = self.extract_text_by_keyword(
                     soup,
@@ -214,20 +215,57 @@ class BaseScraper:
                     rule.get('extract_method', 'next_sibling_text')
                 )
                 if text:
-                    # 分割研究方向（通过逗号、分号、顿号等）
-                    areas = re.split(r'[,;、，；]', text)
+                    # 分割研究方向（通过逗号、分号、顿号、换行等）
+                    areas = re.split(r'[,;、，；\n]', text)
                     areas = [a.strip() for a in areas if a.strip()]
-                    break
+                    # 去除空项和"Ø"等符号
+                    areas = [re.sub(r'^[ØØ·•\-\*\s]+', '', a) for a in areas]
+                    areas = [a for a in areas if a and len(a) > 1]
+                    if areas:
+                        break
 
+            # 方法2：通过CSS选择器提取
             if 'selector' in rule:
                 elem = soup.select_one(rule['selector'])
                 if elem:
                     text = elem.get_text(strip=True)
-                    areas = re.split(r'[,;、，；]', text)
+                    areas = re.split(r'[,;、，；\n]', text)
                     areas = [a.strip() for a in areas if a.strip()]
+                    areas = [re.sub(r'^[ØØ·•\-\*\s]+', '', a) for a in areas]
+                    areas = [a for a in areas if a and len(a) > 1]
+                    if areas:
+                        break
+
+            # 方法3：提取多个元素（如列表项）
+            if 'selector_all' in rule:
+                elements = soup.select(rule['selector_all'])
+                for elem in elements:
+                    text = elem.get_text(strip=True)
+                    text = re.sub(r'^[ØØ·•\-\*\s]+', '', text)
+                    if text and len(text) > 1:
+                        areas.append(text)
+                if areas:
                     break
 
-        return areas
+            # 方法4：通过正则表达式从整个页面提取
+            if 'pattern' in rule and 'selector' not in rule:
+                text = soup.get_text()
+                # 查找包含关键词的段落
+                for keyword in rule.get('keywords', ['研究方向', '研究领域']):
+                    pattern = f'{keyword}[：:](.*?)(?:\n|$)'
+                    match = re.search(pattern, text)
+                    if match:
+                        text_content = match.group(1).strip()
+                        areas = re.split(r'[,;、，；\n]', text_content)
+                        areas = [a.strip() for a in areas if a.strip()]
+                        areas = [re.sub(r'^[ØØ·•\-\*\s]+', '', a) for a in areas]
+                        areas = [a for a in areas if a and len(a) > 1]
+                        if areas:
+                            break
+                if areas:
+                    break
+
+        return areas[:10]  # 最多返回10个研究方向
 
     def clean_text(self, text: Optional[str]) -> Optional[str]:
         """
