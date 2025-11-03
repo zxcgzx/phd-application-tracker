@@ -10,9 +10,9 @@ universities:
 
     # 列表页配置
     list_page:
-      container_selector: "ul > li"  # 导师列表容器
-      link_selector: "a"             # 导师详情页链接
-      name_selector: "a"             # 导师姓名
+      container_selector: "ul.list01.list002 > li"  # 导师列表容器（注意：页面有2个这样的列表）
+      link_selector: "a"                             # 导师详情页链接
+      name_selector: "a"                             # 导师姓名
 
     # 详情页配置（优先级从高到低尝试）
     detail_page:
