@@ -178,32 +178,73 @@ python main.py --url "https://xxx"  # 爬取指定学校
 
 ### 添加新学校
 
-#### 方法 1: 通过配置文件(推荐)
+⚠️ **重要说明**: 在网页上添加学校只是创建数据库记录,**并不会自动爬取数据**。要让爬虫工作,必须在 `crawler/config.yaml` 中配置爬取规则。
 
-编辑 `crawler/config.yaml`:
+#### 详细教程
+
+👉 **完整的添加新学校配置教程**: [如何添加新学校爬取.md](docs/如何添加新学校爬取.md)
+
+包含:
+- 如何分析学校网站结构
+- CSS选择器的使用方法
+- 配置文件详解
+- 实战案例
+- 常见问题排查
+
+#### 快速示例
+
+编辑 `crawler/config.yaml`,添加新学校配置:
 
 ```yaml
 universities:
-  - name: "北京大学信科学院"
-    url: "https://eecs.pku.edu.cn/..."
+  # 保留北理工的配置...
+
+  # 添加新学校
+  - name: "清华大学计算机系"
+    url: "https://www.cs.tsinghua.edu.cn/szdw/jsdw.htm"
     scraper_type: "two_level"
     enabled: true
     update_frequency: "weekly"
 
     list_page:
-      container_selector: "ul > li"
-      link_selector: "a"
-      name_selector: "a"
+      container_selector: "div.teacher-list li"  # 导师列表容器
+      link_selector: "a"                          # 导师链接
+      name_selector: "a"                          # 导师姓名
 
     detail_page:
       email:
+        - selector: "a[href^='mailto:']"
+          extract: "href"
+          pattern: "mailto:(.*)"
         - pattern: "[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}"
-      # ... 其他字段配置
+
+      title:
+        - pattern: "(教授|副教授|研究员)"
+
+      research_areas:
+        - keywords: ["研究方向", "研究领域"]
+          extract_method: "next_sibling_text"
 ```
 
-#### 方法 2: 网页端添加(开发中)
+#### 测试和运行
 
-未来版本将支持在网页上直接输入 URL,系统自动识别结构并爬取。
+```bash
+# 1. 测试配置（不写入数据库）
+cd crawler
+python main.py --url "https://www.cs.tsinghua.edu.cn/szdw/jsdw.htm" --dry-run
+
+# 2. 正式爬取
+python main.py --url "https://www.cs.tsinghua.edu.cn/szdw/jsdw.htm"
+
+# 3. 推送到GitHub（使用云端爬虫）
+git add crawler/config.yaml
+git commit -m "添加清华大学计算机系爬虫配置"
+git push
+```
+
+#### 方法 2: 手动添加导师（不使用爬虫）
+
+如果学校网站结构复杂或数量少,可以在网页上手动添加导师信息。
 
 ### 标记申请进度
 
