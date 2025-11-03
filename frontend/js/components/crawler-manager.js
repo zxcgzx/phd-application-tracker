@@ -254,5 +254,3 @@ window.deleteUniversity = async function(id, name) {
         alert('删除失败: ' + error.message)
     }
 }
-
-export { renderCrawlerPanel }
