@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>数据库诊断工具</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 900px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            border-bottom: 3px solid #4CAF50;
+            padding-bottom: 10px;
+        }
+        .result {
+            margin: 20px 0;
+            padding: 15px;
+            border-radius: 5px;
+            font-family: monospace;
+            white-space: pre-wrap;
+        }
+        .success {
+            background: #d4edda;
+            border: 1px solid #c3e6cb;
+            color: #155724;
+        }
+        .error {
+            background: #f8d7da;
+            border: 1px solid #f5c6cb;
+            color: #721c24;
+        }
+        .info {
+            background: #d1ecf1;
+            border: 1px solid #bee5eb;
+            color: #0c5460;
+        }
+        button {
+            background: #4CAF50;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            font-size: 16px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background: #45a049;
+        }
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #4CAF50;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔍 申请博士记录系统 - 数据库诊断</h1>
+
+        <div class="info result">
+            <strong>这个工具会帮你检查:</strong><br>
+            ✓ Supabase 连接是否正常<br>
+            ✓ 数据库表是否已创建<br>
+            ✓ 导师数据是否存在<br>
+            ✓ 前端配置是否正确
+        </div>
+
+        <button onclick="runDiagnostics()">🚀 开始诊断</button>
+        <button onclick="clearResults()">🗑️ 清空结果</button>
+
+        <div id="results"></div>
+    </div>
+
+    <script>
+        // Supabase 配置
+        const SUPABASE_URL = 'https://cacvfqtupprixlmzrury.supabase.co'
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNhY3ZmcXR1cHByaXhsbXpydXJ5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjIxMzI1OTMsImV4cCI6MjA3NzcwODU5M30.sCUpeJpLzGZ3AoMwpo0JnrMDykp8sH1pPvtYEgp3jZM'
+
+        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
+
+        function addResult(message, type = 'info') {
+            const results = document.getElementById('results')
+            const div = document.createElement('div')
+            div.className = `result ${type}`
+            div.textContent = message
+            results.appendChild(div)
+        }
+
+        function clearResults() {
+            document.getElementById('results').innerHTML = ''
+        }
+
+        async function runDiagnostics() {
+            clearResults()
+            addResult('⏳ 开始诊断...', 'info')
+
+            // 1. 检查配置
+            addResult('\n1️⃣ 检查 Supabase 配置...', 'info')
+            addResult(`URL: ${SUPABASE_URL}`, 'info')
+            addResult(`Key: ${SUPABASE_ANON_KEY.substring(0, 20)}...`, 'info')
+
+            // 2. 检查 universities 表
+            addResult('\n2️⃣ 检查 universities 表...', 'info')
+            try {
+                const { data: universities, error } = await supabase
+                    .from('universities')
+                    .select('*')
+
+                if (error) {
+                    addResult(`❌ 查询失败: ${error.message}`, 'error')
+                    addResult(`错误详情: ${JSON.stringify(error, null, 2)}`, 'error')
+
+                    if (error.code === 'PGRST116') {
+                        addResult('\n💡 这个错误表示 universities 表不存在!', 'error')
+                        addResult('请在 Supabase SQL Editor 中执行 database/init_all.sql', 'error')
+                    }
+                } else {
+                    addResult(`✅ 找到 ${universities.length} 个学校`, 'success')
+                    universities.forEach(uni => {
+                        addResult(`  - ${uni.name} (${uni.professors_count || 0} 位导师)`, 'success')
+                    })
+                }
+            } catch (e) {
+                addResult(`❌ 异常: ${e.message}`, 'error')
+            }
+
+            // 3. 检查 professors 表
+            addResult('\n3️⃣ 检查 professors 表...', 'info')
+            try {
+                const { count, error: countError } = await supabase
+                    .from('professors')
+                    .select('*', { count: 'exact', head: true })
+
+                if (countError) {
+                    addResult(`❌ 查询失败: ${countError.message}`, 'error')
+
+                    if (countError.code === 'PGRST116') {
+                        addResult('\n💡 professors 表不存在! 请执行 init_all.sql', 'error')
+                    } else if (countError.code === '42501') {
+                        addResult('\n💡 权限错误! RLS策略可能有问题', 'error')
+                        addResult('请在 Supabase 中检查 RLS 策略设置', 'error')
+                    }
+                } else {
+                    addResult(`✅ professors 表存在，共有 ${count} 位导师`, 'success')
+
+                    if (count === 0) {
+                        addResult('\n⚠️ professors 表是空的！', 'error')
+                        addResult('可能的原因:', 'error')
+                        addResult('1. 还没运行过爬虫', 'error')
+                        addResult('2. 爬虫运行失败', 'error')
+                        addResult('3. GitHub Secrets 配置错误', 'error')
+                    } else {
+                        // 获取前5位导师
+                        const { data: professors } = await supabase
+                            .from('professors')
+                            .select('name, email, title, university_id')
+                            .limit(5)
+
+                        addResult('\n前5位导师:', 'success')
+                        professors.forEach((prof, i) => {
+                            addResult(`  ${i+1}. ${prof.name} - ${prof.title || '职称未知'} - ${prof.email || '邮箱未知'}`, 'success')
+                        })
+                    }
+                }
+            } catch (e) {
+                addResult(`❌ 异常: ${e.message}`, 'error')
+            }
+
+            // 4. 检查 applications 表
+            addResult('\n4️⃣ 检查 applications 表...', 'info')
+            try {
+                const { count, error } = await supabase
+                    .from('applications')
+                    .select('*', { count: 'exact', head: true })
+
+                if (error) {
+                    addResult(`❌ 查询失败: ${error.message}`, 'error')
+                } else {
+                    addResult(`✅ 找到 ${count} 条申请记录`, 'success')
+                }
+            } catch (e) {
+                addResult(`❌ 异常: ${e.message}`, 'error')
+            }
+
+            // 5. 检查 email_templates 表
+            addResult('\n5️⃣ 检查 email_templates 表...', 'info')
+            try {
+                const { data: templates, error } = await supabase
+                    .from('email_templates')
+                    .select('name')
+
+                if (error) {
+                    addResult(`❌ 查询失败: ${error.message}`, 'error')
+                } else {
+                    addResult(`✅ 找到 ${templates.length} 个邮件模板`, 'success')
+                    templates.forEach(tpl => {
+                        addResult(`  - ${tpl.name}`, 'success')
+                    })
+                }
+            } catch (e) {
+                addResult(`❌ 异常: ${e.message}`, 'error')
+            }
+
+            // 总结
+            addResult('\n' + '='.repeat(60), 'info')
+            addResult('📊 诊断完成！', 'info')
+            addResult('\n如果看到很多 ❌ 错误:', 'info')
+            addResult('1. 请先在 Supabase SQL Editor 执行 database/init_all.sql', 'info')
+            addResult('2. 然后在 GitHub Actions 手动触发爬虫', 'info')
+            addResult('3. 最后刷新这个页面重新诊断', 'info')
+        }
+    </script>
+</body>
+</html>
