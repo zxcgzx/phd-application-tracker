@@ -1,0 +1,39 @@
+name: Weekly Crawler
+
+on:
+  schedule:
+    # 每周日凌晨 3:00 UTC (北京时间 11:00)
+    - cron: '0 3 * * 0'
+  workflow_dispatch:  # 支持手动触发
+
+jobs:
+  crawl:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+
+      - name: Install dependencies
+        run: |
+          cd crawler
+          pip install -r requirements.txt
+
+      - name: Run crawler
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+        run: |
+          cd crawler
+          python main.py
+
+      - name: Notify on failure
+        if: failure()
+        run: |
+          echo "爬虫执行失败！请检查日志。"
+          # 可以在这里添加邮件或其他通知方式

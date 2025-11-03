@@ -1,0 +1,54 @@
+# 爬虫配置文件
+# 管理所有需要爬取的学校官网
+
+universities:
+  - name: "北京理工大学自动化学院"
+    url: "https://ac.bit.edu.cn/szdw/dsmd/bssds/index.htm"
+    scraper_type: "two_level"  # 两层结构：列表页 + 详情页
+    enabled: true
+    update_frequency: "weekly"  # daily/weekly/monthly
+
+    # 列表页配置
+    list_page:
+      container_selector: "ul > li"  # 导师列表容器
+      link_selector: "a"             # 导师详情页链接
+      name_selector: "a"             # 导师姓名
+
+    # 详情页配置（优先级从高到低尝试）
+    detail_page:
+      email:
+        - selector: "a[href^='mailto:']"
+          extract: "href"
+          pattern: "mailto:(.*)"
+        - pattern: "[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}"
+
+      phone:
+        - pattern: "\\d{3,4}-\\d{7,8}|\\d{11}"
+
+      title:
+        - pattern: "(教授|副教授|研究员|讲师)"
+        - selector: "span.title, .职称, .title"
+
+      research_areas:
+        - keywords: ["研究方向", "研究领域", "Research Interests"]
+          extract_method: "next_sibling_text"
+        - selector: ".research, .研究方向"
+
+      office:
+        - keywords: ["办公室", "Office"]
+          extract_method: "next_sibling_text"
+
+  # 更多学校可以在这里添加
+  # - name: "清华大学计算机系"
+  #   url: "https://www.cs.tsinghua.edu.cn/..."
+  #   scraper_type: "two_level"
+  #   ...
+
+# 爬虫全局配置
+settings:
+  request_delay: 1.0           # 请求间隔（秒）
+  timeout: 30                  # 请求超时（秒）
+  max_retries: 3               # 最大重试次数
+  user_agent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
+  respect_robots_txt: true     # 遵守 robots.txt
+  max_workers: 3               # 并发爬取数量
