@@ -1,0 +1,68 @@
+name: 手动触发爬虫
+
+on:
+  workflow_dispatch:  # 允许在GitHub网页上手动触发
+    inputs:
+      target_url:
+        description: '目标学校URL (可选,留空则爬取所有已配置学校)'
+        required: false
+        default: ''
+        type: string
+      dry_run:
+        description: '测试模式 (不写入数据库)'
+        required: false
+        default: false
+        type: boolean
+
+jobs:
+  crawl:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 📥 拉取代码
+        uses: actions/checkout@v3
+
+      - name: 🐍 安装 Python 3.10
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+
+      - name: 📦 安装依赖
+        run: |
+          cd crawler
+          pip install -r requirements.txt
+
+      - name: 🕷️ 执行爬虫
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+        run: |
+          cd crawler
+
+          # 构建命令
+          CMD="python main.py"
+
+          # 如果指定了URL,添加参数
+          if [ -n "${{ inputs.target_url }}" ]; then
+            CMD="$CMD --url '${{ inputs.target_url }}'"
+          fi
+
+          # 如果开启测试模式,添加参数
+          if [ "${{ inputs.dry_run }}" == "true" ]; then
+            CMD="$CMD --dry-run"
+          fi
+
+          echo "执行命令: $CMD"
+          eval $CMD
+
+      - name: 📊 输出统计
+        if: success()
+        run: |
+          echo "✅ 爬虫执行成功!"
+          echo "请在 Supabase 数据库中查看新增的导师信息"
+
+      - name: ❌ 错误通知
+        if: failure()
+        run: |
+          echo "爬虫执行失败！"
+          echo "请查看上方日志获取详细错误信息"
