@@ -16,16 +16,6 @@ universities:
 
     # 详情页配置（优先级从高到低尝试）
     detail_page:
-      email:
-        - selector: "a[href^='mailto:']"
-          extract: "href"
-          pattern: "mailto:(.*)"
-        - pattern: "[a-zA-Z0-9._%+-]+@bit\\.edu\\.cn"
-        - pattern: "[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}"
-
-      phone:
-        - pattern: "\\d{3,4}-\\d{7,8}|\\d{11}"
-
       title:
         - keywords: ["职称", "Title"]
           extract_method: "next_sibling_text"
@@ -66,13 +56,6 @@ universities:
       name_selector: "a"
 
     detail_page:
-      email:
-        - pattern: "[a-zA-Z0-9._%+-]+@ncepu\\.edu\\.cn"
-        - pattern: "[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}"
-
-      phone:
-        - pattern: "\\d{3,4}-\\d{7,8}|\\d{11}"
-
       title:
         - keywords: ["职称", "Title"]
           extract_method: "next_sibling_text"
@@ -109,16 +92,6 @@ universities:
       name_selector: "a"
 
     detail_page:
-      email:
-        - selector: "a[href^='mailto:']"
-          extract: "href"
-          pattern: "mailto:(.*)"
-        - pattern: "[a-zA-Z0-9._%+-]+@buaa\\.edu\\.cn"
-        - pattern: "[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}"
-
-      phone:
-        - pattern: "\\d{3,4}-\\d{7,8}|\\d{11}"
-
       title:
         - keywords: ["职称", "职务"]
           extract_method: "next_sibling_text"

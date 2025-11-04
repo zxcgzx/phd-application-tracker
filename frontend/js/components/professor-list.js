@@ -98,54 +98,17 @@ export function renderProfessorCard(professor, application, state) {
         </button>
     `).join('')
 
-    const quickActions = []
-    if (professor.email) {
-        quickActions.push(`
-            <button
-                type="button"
-                data-action="copy-field"
-                data-label="邮箱"
-                data-value="${escapeHtml(professor.email)}"
-                class="quick-action-btn"
-            >
-                复制邮箱
-            </button>
-        `)
-    }
-    if (professor.phone) {
-        quickActions.push(`
-            <button
-                type="button"
-                data-action="copy-field"
-                data-label="电话"
-                data-value="${escapeHtml(professor.phone)}"
-                class="quick-action-btn"
-            >
-                复制电话
-            </button>
-        `)
-    }
-    if (professor.homepage) {
-        const homepage = escapeHtml(professor.homepage)
-        quickActions.push(`
-            <a
-                href="${homepage}"
-                target="_blank"
-                rel="noopener"
-                class="quick-action-btn quick-action-link"
-            >
-                打开主页 ↗
-            </a>
-        `)
-    }
-
-    const quickActionSection = quickActions.length > 0
+    const homepageLink = professor.homepage
         ? `
-            <div class="quick-action-group">
-                <p class="quick-action-title">快捷操作</p>
-                <div class="quick-action-buttons">
-                    ${quickActions.join('')}
-                </div>
+            <div class="card-links">
+                <a
+                    href="${escapeHtml(professor.homepage)}"
+                    target="_blank"
+                    rel="noopener"
+                    class="card-link-button"
+                >
+                    访问主页
+                </a>
             </div>
         `
         : ''
@@ -185,13 +148,16 @@ export function renderProfessorCard(professor, application, state) {
         `
         : ''
 
+    const cardContentClass = state.batchMode ? 'card-content card-content-selection' : 'card-content'
+    const cardHeaderClass = state.batchMode ? 'card-header card-header-selection' : 'card-header'
+
     return `
-        <article class="professor-card glass-card ${accentClass}">
+        <article class="professor-card ${accentClass}">
             ${batchCheckbox}
             <span class="card-accent"></span>
 
-            <div class="card-content ${state.batchMode ? 'pl-6 md:pl-8' : ''}">
-                <header class="card-header">
+            <div class="${cardContentClass}">
+                <header class="${cardHeaderClass}">
                     <div>
                         <div class="flex items-center gap-2 mb-1">
                             <h3 class="card-title">${professor.name}</h3>
@@ -220,35 +186,25 @@ export function renderProfessorCard(professor, application, state) {
                 </section>
 
                 ${(professor.email || professor.phone || professor.homepage) ? `
-                    <section class="card-section">
-                        <p class="card-section-title">📮 联系方式</p>
-                        <div class="contact-grid">
-                            ${professor.email ? `<span class="contact-chip truncate">📧 ${professor.email}</span>` : ''}
-                            ${professor.phone ? `<span class="contact-chip">📞 ${professor.phone}</span>` : ''}
-                            ${professor.homepage ? `<a href="${escapeHtml(professor.homepage)}" target="_blank" rel="noopener" class="contact-chip contact-link">主页 ↗</a>` : ''}
-                        </div>
-                    </section>
-                ` : ''}
-
                 ${application ? `
                     <section class="application-summary">
                         <div class="application-grid">
-                            <div>
-                                <p class="summary-label">状态</p>
+                            <div class="application-item">
+                                <p class="summary-label">当前状态</p>
                                 <p class="summary-value">${status}</p>
                             </div>
-                            <div>
-                                <p class="summary-label">操作人</p>
-                                <p class="summary-value">${sentBy || '未知'}</p>
+                            <div class="application-item">
+                                <p class="summary-label">跟进成员</p>
+                                <p class="summary-value">${sentBy || '未分配'}</p>
                             </div>
                             ${application.sent_at ? `
-                                <div>
+                                <div class="application-item">
                                     <p class="summary-label">发送时间</p>
                                     <p class="summary-value">${new Date(application.sent_at).toLocaleDateString('zh-CN')}</p>
                                 </div>
                             ` : ''}
                             ${application.replied_at ? `
-                                <div>
+                                <div class="application-item">
                                     <p class="summary-label">回复时间</p>
                                     <p class="summary-value">${new Date(application.replied_at).toLocaleDateString('zh-CN')}</p>
                                 </div>
@@ -260,7 +216,7 @@ export function renderProfessorCard(professor, application, state) {
                     </section>
                 ` : `
                     <section class="application-empty">
-                        <p>尚未创建申请记录，点击下方按钮即可快速创建。</p>
+                        <p>尚未创建申请记录，可在下方操作。</p>
                     </section>
                 `}
 
@@ -273,7 +229,7 @@ export function renderProfessorCard(professor, application, state) {
 
                 ${followupControls}
 
-                ${quickActionSection}
+                ${homepageLink}
 
                 ${tagChips}
 
@@ -326,100 +282,73 @@ export function openProfessorModal(professor, application, state) {
         : ''
 
     content.innerHTML = `
-        <!-- 关闭按钮 -->
-        <button
-            onclick="closeModal()"
-            class="absolute top-4 right-4 text-gray-400 hover:text-gray-600 text-2xl"
-        >
-            ×
-        </button>
+        <button onclick="closeModal()" class="modal-close-btn">×</button>
 
-        <!-- 导师信息 -->
-        <div class="mb-6">
-            <h2 class="text-2xl font-bold text-gray-800 mb-2">${professor.name}</h2>
-            <p class="text-gray-600">${professor.title || '未知职称'} | ${professor.universities?.name || '未知学校'}</p>
-        </div>
-
-        <!-- 详细信息 -->
-        <div class="space-y-4 mb-6">
+        <div class="modal-header">
             <div>
-                <h3 class="text-sm font-semibold text-gray-700 mb-1">研究方向</h3>
-                <p class="text-gray-600">${researchAreas}</p>
+                <h2 class="modal-title">${professor.name}</h2>
+                <p class="modal-subtitle">${professor.title || '未知职称'} · ${professor.universities?.name || '未知学校'}</p>
             </div>
-
-            ${professor.email ? `
-                <div>
-                    <h3 class="text-sm font-semibold text-gray-700 mb-1">邮箱</h3>
-                    <a href="mailto:${professor.email}" class="text-blue-600 hover:underline">${professor.email}</a>
-                </div>
-            ` : ''}
-
-            ${professor.phone ? `
-                <div>
-                    <h3 class="text-sm font-semibold text-gray-700 mb-1">电话</h3>
-                    <p class="text-gray-600">${professor.phone}</p>
-                </div>
-            ` : ''}
-
-            ${professor.office_location ? `
-                <div>
-                    <h3 class="text-sm font-semibold text-gray-700 mb-1">办公室</h3>
-                    <p class="text-gray-600">${professor.office_location}</p>
-                </div>
-            ` : ''}
-
-            ${professor.homepage ? `
-                <div>
-                    <h3 class="text-sm font-semibold text-gray-700 mb-1">个人主页</h3>
-                    <a href="${professor.homepage}" target="_blank" class="text-blue-600 hover:underline">
-                        ${professor.homepage} ↗
-                    </a>
-                </div>
-            ` : ''}
+            <span class="status-badge status-${status}">${status}</span>
         </div>
 
-        <!-- 申请记录 -->
-        <div class="border-t pt-6">
-            <h3 class="text-lg font-semibold text-gray-800 mb-4">申请记录</h3>
+        <section class="modal-section">
+            <h3 class="modal-section-title">研究方向</h3>
+            <p class="modal-section-text">${researchAreas}</p>
+        </section>
+
+        ${professor.homepage ? `
+            <section class="modal-section">
+                <h3 class="modal-section-title">个人主页</h3>
+                <a href="${professor.homepage}" target="_blank" rel="noopener" class="modal-link">
+                    访问导师主页
+                </a>
+            </section>
+        ` : ''}
+
+        ${professor.office_location ? `
+            <section class="modal-section">
+                <h3 class="modal-section-title">办公室</h3>
+                <p class="modal-section-text">${professor.office_location}</p>
+            </section>
+        ` : ''}
+
+        <section class="modal-section">
+            <h3 class="modal-section-title">申请记录</h3>
 
             ${application ? `
-                <div class="bg-gray-50 rounded-lg p-4 mb-4">
-                    <div class="grid grid-cols-2 gap-4 mb-4">
-                        <div>
-                            <p class="text-xs text-gray-500">状态</p>
-                            <span class="status-badge status-${status} mt-1">${status}</span>
+                <div class="modal-summary">
+                    <div class="modal-summary-grid">
+                        <div class="modal-summary-item">
+                            <span class="modal-summary-label">状态</span>
+                            <span class="modal-summary-value">${status}</span>
                         </div>
-                        <div>
-                            <p class="text-xs text-gray-500">操作人</p>
-                            <p class="font-semibold">${application.sent_by || '未知'}</p>
+                        <div class="modal-summary-item">
+                            <span class="modal-summary-label">操作人</span>
+                            <span class="modal-summary-value">${application.sent_by || '未分配'}</span>
                         </div>
                         ${application.sent_at ? `
-                            <div>
-                                <p class="text-xs text-gray-500">发送时间</p>
-                                <p class="font-semibold">${new Date(application.sent_at).toLocaleString('zh-CN')}</p>
+                            <div class="modal-summary-item">
+                                <span class="modal-summary-label">发送</span>
+                                <span class="modal-summary-value">${new Date(application.sent_at).toLocaleString('zh-CN')}</span>
                             </div>
                         ` : ''}
                         ${application.replied_at ? `
-                            <div>
-                                <p class="text-xs text-gray-500">回复时间</p>
-                                <p class="font-semibold">${new Date(application.replied_at).toLocaleString('zh-CN')}</p>
+                            <div class="modal-summary-item">
+                                <span class="modal-summary-label">回复</span>
+                                <span class="modal-summary-value">${new Date(application.replied_at).toLocaleString('zh-CN')}</span>
                             </div>
                         ` : ''}
                     </div>
-
                     ${application.notes ? `
-                        <div>
-                            <p class="text-xs text-gray-500 mb-1">备注</p>
-                            <p class="text-sm text-gray-700">${application.notes}</p>
-                        </div>
+                        <p class="modal-summary-note">备注：${application.notes}</p>
                     ` : ''}
                 </div>
 
-                <!-- 更新记录表单 -->
-                <div class="space-y-3">
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">更新状态</label>
-                        <select id="update-status" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                <div class="modal-form-grid">
+                    <label class="modal-field">
+                        <span class="modal-field-label">更新状态</span>
+                        <select id="update-status" class="modal-select">
                             <option value="待发送" ${status === '待发送' ? 'selected' : ''}>待发送</option>
                             <option value="已发送" ${status === '已发送' ? 'selected' : ''}>已发送</option>
                             <option value="已读" ${status === '已读' ? 'selected' : ''}>已读</option>
@@ -428,115 +357,74 @@ export function openProfessorModal(professor, application, state) {
                             <option value="已接受" ${status === '已接受' ? 'selected' : ''}>已接受</option>
                             <option value="已拒绝" ${status === '已拒绝' ? 'selected' : ''}>已拒绝</option>
                         </select>
-                    </div>
+                    </label>
 
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-1">优先级</label>
-                            <select id="update-priority" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
-                                ${[1, 2, 3, 4, 5].map(level => `
-                                    <option value="${level}" ${priorityValue === level ? 'selected' : ''}>${level} 星</option>
-                                `).join('')}
-                            </select>
-                        </div>
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-1">匹配度</label>
-                            <select id="update-match-score" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
-                                <option value="">未设置</option>
-                                ${[1, 2, 3, 4, 5].map(score => `
-                                    <option value="${score}" ${matchScoreValue === score ? 'selected' : ''}>${score} 星</option>
-                                `).join('')}
-                            </select>
-                        </div>
-                    </div>
+                    <label class="modal-field">
+                        <span class="modal-field-label">优先级</span>
+                        <select id="update-priority" class="modal-select">
+                            ${[1, 2, 3, 4, 5].map(level => `
+                                <option value="${level}" ${priorityValue === level ? 'selected' : ''}>${level} 星</option>
+                            `).join('')}
+                        </select>
+                    </label>
 
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">下次跟进时间</label>
-                        <input
-                            type="datetime-local"
-                            id="update-next-followup"
-                            value="${nextFollowupValue}"
-                            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                        >
-                        ${lastFollowupText ? `
-                            <p class="text-xs text-gray-500 mt-1">上次跟进: ${lastFollowupText}</p>
-                        ` : ''}
-                    </div>
+                    <label class="modal-field">
+                        <span class="modal-field-label">匹配度</span>
+                        <select id="update-match-score" class="modal-select">
+                            <option value="">未设置</option>
+                            ${[1, 2, 3, 4, 5].map(score => `
+                                <option value="${score}" ${matchScoreValue === score ? 'selected' : ''}>${score} 星</option>
+                            `).join('')}
+                        </select>
+                    </label>
 
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">标签（用逗号分隔）</label>
-                        <input
-                            type="text"
-                            id="update-tags"
-                            value="${escapeHtml(tagsValueRaw)}"
-                            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                            placeholder="例如: 重点关注, 保底"
-                        >
-                    </div>
+                    <label class="modal-field">
+                        <span class="modal-field-label">下次跟进时间</span>
+                        <input type="datetime-local" id="update-next-followup" value="${nextFollowupValue}" class="modal-input">
+                        ${lastFollowupText ? `<span class="modal-field-hint">上次跟进：${lastFollowupText}</span>` : ''}
+                    </label>
 
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">回复摘要</label>
-                        <textarea
-                            id="update-reply-summary"
-                            rows="3"
-                            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                            placeholder="记录要点，便于快速回顾"
-                        >${escapeHtml(replySummaryRaw)}</textarea>
-                    </div>
+                    <label class="modal-field">
+                        <span class="modal-field-label">标签（逗号分隔）</span>
+                        <input type="text" id="update-tags" value="${escapeHtml(tagsValueRaw)}" class="modal-input" placeholder="例如：重点关注, 保底">
+                    </label>
 
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">备注</label>
-                        <textarea
-                            id="update-notes"
-                            rows="3"
-                            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                            placeholder="添加备注..."
-                        >${escapeHtml(application.notes || '')}</textarea>
-                    </div>
+                    <label class="modal-field span-2">
+                        <span class="modal-field-label">回复摘要</span>
+                        <textarea id="update-reply-summary" rows="3" class="modal-textarea" placeholder="记录要点，便于快速回顾">${escapeHtml(replySummaryRaw)}</textarea>
+                    </label>
 
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">邮件主题</label>
-                        <input
-                            type="text"
-                            id="update-email-subject"
-                            value="${escapeHtml(emailSubjectRaw)}"
-                            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                            placeholder="发送给导师的邮件主题"
-                        >
-                    </div>
+                    <label class="modal-field span-2">
+                        <span class="modal-field-label">备注</span>
+                        <textarea id="update-notes" rows="3" class="modal-textarea" placeholder="添加备注...">${escapeHtml(application.notes || '')}</textarea>
+                    </label>
 
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">邮件正文摘要</label>
-                        <textarea
-                            id="update-email-body"
-                            rows="4"
-                            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 font-mono text-sm"
-                            placeholder="保留你发送的核心内容，方便日后参考"
-                        >${escapeHtml(emailBodyRaw)}</textarea>
-                    </div>
+                    <label class="modal-field">
+                        <span class="modal-field-label">邮件主题</span>
+                        <input type="text" id="update-email-subject" value="${escapeHtml(emailSubjectRaw)}" class="modal-input" placeholder="发送给导师的邮件主题">
+                    </label>
 
-                    <div class="flex items-center gap-2">
-                        <input type="checkbox" id="update-followup-done" class="h-4 w-4">
-                        <label for="update-followup-done" class="text-sm text-gray-600">本次更新包含一次跟进，自动记录最后跟进时间</label>
-                    </div>
+                    <label class="modal-field span-2">
+                        <span class="modal-field-label">邮件正文摘要</span>
+                        <textarea id="update-email-body" rows="4" class="modal-textarea modal-textarea-code" placeholder="保留你发送的核心内容">${escapeHtml(emailBodyRaw)}</textarea>
+                    </label>
 
-                    <button
-                        onclick="updateApplication('${application.id}')"
-                        class="w-full px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-                    >
-                        保存更新
-                    </button>
+                    <label class="modal-checkbox span-2">
+                        <input type="checkbox" id="update-followup-done">
+                        <span>本次更新包含一次跟进，自动记录最后跟进时间</span>
+                    </label>
                 </div>
+
+                <button onclick="updateApplication('${application.id}')" class="modal-primary-btn">
+                    保存更新
+                </button>
             ` : `
-                <p class="text-gray-500 text-center py-8">尚未创建申请记录</p>
-                <button
-                    onclick="markAsSent('${professor.id}')"
-                    class="w-full px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
-                >
+                <p class="modal-empty-state">尚未创建申请记录，点击下方按钮即可快速创建。</p>
+                <button onclick="markAsSent('${professor.id}')" class="modal-primary-btn">
                     创建申请记录
                 </button>
             `}
-        </div>
+        </section>
     `
 
     modal.classList.remove('hidden')

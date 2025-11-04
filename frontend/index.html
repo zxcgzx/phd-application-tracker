@@ -5,306 +5,235 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>申请博士记录系统</title>
 
-    <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
-
-    <!-- Supabase Client -->
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-
-    <!-- 自定义样式 -->
-    <link rel="stylesheet" href="css/style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400&display=swap" rel="stylesheet">
 
     <script>
         tailwind.config = {
             theme: {
                 extend: {
                     colors: {
-                        primary: '#3b82f6',
-                        secondary: '#10b981'
+                        primary: '#03A9F4',
+                        primaryDark: '#0288D7'
                     }
                 }
             }
         }
     </script>
+
+    <link rel="stylesheet" href="css/style.css">
 </head>
-<body class="bg-slate-100 text-slate-900">
-    <div class="min-h-screen">
-        <!-- 顶部英雄区 -->
-        <header class="app-hero relative overflow-hidden">
-            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 relative z-10">
-                <div class="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-8">
-                    <div>
-                        <span class="inline-flex items-center px-3 py-1 text-sm rounded-full bg-white/20 text-white/90 backdrop-blur">
-                            🎯 全流程博士申请助理
-                        </span>
-                        <h1 class="mt-4 text-3xl sm:text-4xl font-bold text-white tracking-tight">
-                            申请博士记录
-                        </h1>
-                        <p class="mt-3 text-base sm:text-lg text-indigo-100 leading-relaxed max-w-2xl">
-                            将导师联络、状态跟进与爬虫抓取集中在一个界面，配合自动提醒与批量操作，让申请进度始终井井有条。
-                        </p>
-                    </div>
-                    <div class="flex flex-col items-start gap-4">
-                        <div id="current-user" class="hero-user-selector text-white text-sm">
-                            加载中...
-                        </div>
-                        <button id="sync-indicator" class="sync-indicator">
-                            <span class="indicator-dot"></span>
-                            实时同步
-                        </button>
-                    </div>
+<body class="app-body">
+    <div class="app-shell">
+        <aside class="sidebar">
+            <div class="sidebar-brand">
+                <div class="brand-mark">🎯</div>
+                <div class="brand-text">
+                    <p class="brand-title">申请博士记录</p>
+                    <p class="brand-subtitle">PhD Tracker</p>
                 </div>
+            </div>
 
-                <!-- 核心指标 -->
-                <div class="grid gap-4 mt-10 sm:grid-cols-2 lg:grid-cols-5 hero-metrics">
-                    <div class="metric-card">
-                        <p class="metric-label">总导师</p>
-                        <p class="metric-value" id="metric-total">--</p>
-                        <p class="metric-desc">当前数据库中的导师数量</p>
-                    </div>
-                    <div class="metric-card">
-                        <p class="metric-label">等待反馈</p>
-                        <p class="metric-value" id="metric-in-progress">--</p>
-                        <p class="metric-desc">已发送但尚未得到回复</p>
-                    </div>
-                    <div class="metric-card">
-                        <p class="metric-label">已回复</p>
-                        <p class="metric-value" id="metric-replied">--</p>
-                        <p class="metric-desc">导师已有回应的记录</p>
-                    </div>
-                    <div class="metric-card">
-                        <p class="metric-label">回复率</p>
-                        <p class="metric-value" id="metric-reply-rate">--</p>
-                        <p class="metric-desc">已发送邮件中的成功回复比例</p>
-                    </div>
-                    <div class="metric-card">
-                        <p class="metric-label">待跟进</p>
-                        <p class="metric-value" id="metric-followups">--</p>
-                        <p class="metric-desc">逾期或即将到期的提醒</p>
-                    </div>
-                </div>
-
-                <!-- Tab 导航 -->
-                <nav class="tab-nav mt-10">
-                    <button data-tab="stats" class="tab-btn">
-                        <span>📊 统计面板</span>
+            <div class="sidebar-section">
+                <h2 class="sidebar-section-title">导航</h2>
+                <nav class="sidebar-nav">
+                    <button data-tab="professors" class="tab-btn sidebar-link is-active">
+                        导师进度
                     </button>
-                    <button data-tab="professors" class="tab-btn is-active">
-                        <span>👨‍🏫 导师跟进</span>
+                    <button data-tab="stats" class="tab-btn sidebar-link">
+                        统计看板
                     </button>
-                    <button data-tab="crawler" class="tab-btn">
-                        <span>🕷️ 爬虫管理</span>
+                    <button data-tab="crawler" class="tab-btn sidebar-link">
+                        爬虫管理
                     </button>
                 </nav>
             </div>
-        </header>
 
-        <!-- 主体内容 -->
-        <main class="relative z-10 -mt-16 pb-16">
-            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                <!-- 统计面板 Tab -->
-                <section id="tab-stats" class="tab-content hidden">
-                    <div class="glass-panel" id="stats-panel"></div>
-                </section>
-
-                <!-- 导师列表 Tab -->
-                <section id="tab-professors" class="tab-content">
-                    <section id="professors-overview" class="overview-grid"></section>
-
-                    <section class="glass-panel mt-6 space-y-6">
-                        <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-                            <div class="relative flex-1 min-w-[240px]">
-                                <span class="search-icon">🔍</span>
-                                <input
-                                    type="text"
-                                    id="search-input"
-                                    placeholder="搜索导师姓名、研究方向或标签..."
-                                    class="search-input"
-                                >
-                            </div>
-                            <div class="flex flex-wrap gap-3 items-center">
-                                <select id="filter-university" class="filter-select">
-                                    <option value="">所有学校</option>
-                                </select>
-                                <select id="filter-status" class="filter-select">
-                                    <option value="">所有状态</option>
-                                    <option value="待发送">待发送</option>
-                                    <option value="已发送">已发送</option>
-                                    <option value="已读">已读</option>
-                                    <option value="已回复">已回复</option>
-                                    <option value="待面试">待面试</option>
-                                    <option value="已接受">已接受</option>
-                                    <option value="已拒绝">已拒绝</option>
-                                </select>
-                                <select id="filter-sent-by" class="filter-select">
-                                    <option value="">所有人</option>
-                                    <option value="Zhang">Zhang</option>
-                                    <option value="Shi">Shi</option>
-                                </select>
-                                <button id="batch-mode-btn" class="secondary-btn">
-                                    批量操作
-                                </button>
-                                <button id="create-professor-btn" class="primary-btn">
-                                    新建导师
-                                </button>
-                            </div>
-                        </div>
-
-                        <div class="status-pill-bar" id="status-pills"></div>
-
-                        <div id="batch-actions" class="batch-toolbar hidden">
-                            <span class="text-sm text-slate-600">
-                                已选择 <span id="selected-count" class="font-semibold">0</span> 位导师
-                            </span>
-                            <div class="flex flex-wrap gap-2">
-                                <button id="batch-mark-sent" class="toolbar-btn primary">标记为已发送</button>
-                                <button id="batch-export" class="toolbar-btn">导出选中</button>
-                                <button id="batch-cancel" class="toolbar-btn subtle">取消</button>
-                            </div>
-                        </div>
-                    </section>
-
-                    <section class="glass-panel mt-6" id="insights-panel"></section>
-
-                    <div id="professors-grid" class="professors-grid mt-6">
-                        <div class="col-span-full text-center py-12 text-gray-400">
-                            加载中...
-                        </div>
-                    </div>
-
-                    <div class="mt-12 text-center">
-                        <button id="load-more" class="primary-btn-outline hidden">
-                            加载更多
-                        </button>
-                    </div>
-                </section>
-
-                <!-- 爬虫管理 Tab -->
-                <section id="tab-crawler" class="tab-content hidden">
-                    <div class="glass-panel" id="crawler-panel"></div>
-                </section>
+            <div class="sidebar-section">
+                <h2 class="sidebar-section-title">当前用户</h2>
+                <div id="current-user" class="sidebar-user">加载中...</div>
             </div>
+        </aside>
+
+        <main class="workspace">
+            <header class="workspace-header">
+                <div>
+                    <h1 class="workspace-title">导师进度面板</h1>
+                    <p class="workspace-description">快速掌握博士申请进展，聚焦下一步行动。</p>
+                </div>
+                <button id="sync-indicator" class="sync-indicator">
+                    <span class="indicator-dot"></span>
+                    实时同步
+                </button>
+            </header>
+
+            <section id="tab-professors" class="tab-content">
+                <div class="filter-card">
+                    <div class="filter-search">
+                        <span class="filter-icon">🔍</span>
+                        <input
+                            type="text"
+                            id="search-input"
+                            placeholder="搜索导师姓名、研究方向或标签"
+                            class="filter-input"
+                        >
+                    </div>
+                    <div class="filter-controls">
+                        <select id="filter-university" class="filter-select">
+                            <option value="">所有学校</option>
+                        </select>
+                        <select id="filter-status" class="filter-select">
+                            <option value="">所有状态</option>
+                            <option value="待发送">待发送</option>
+                            <option value="已发送">已发送</option>
+                            <option value="已读">已读</option>
+                            <option value="已回复">已回复</option>
+                            <option value="待面试">待面试</option>
+                            <option value="已接受">已接受</option>
+                            <option value="已拒绝">已拒绝</option>
+                        </select>
+                        <select id="filter-sent-by" class="filter-select">
+                            <option value="">所有人</option>
+                            <option value="Zhang">Zhang</option>
+                            <option value="Shi">Shi</option>
+                        </select>
+                        <button id="batch-mode-btn" class="secondary-btn">批量操作</button>
+                        <button id="create-professor-btn" class="primary-btn">新建导师</button>
+                    </div>
+                </div>
+
+                <div id="status-pills" class="status-pill-bar"></div>
+
+                <div id="batch-actions" class="batch-toolbar hidden">
+                    <span class="batch-summary">
+                        已选择 <span id="selected-count" class="batch-count">0</span> 位导师
+                    </span>
+                    <div class="batch-actions">
+                        <button id="batch-mark-sent" class="toolbar-btn primary">标记为已发送</button>
+                        <button id="batch-export" class="toolbar-btn">导出选中</button>
+                        <button id="batch-cancel" class="toolbar-btn subtle">取消</button>
+                    </div>
+                </div>
+
+                <div id="professors-grid" class="professors-grid">
+                    <div class="grid-placeholder">
+                        数据加载中...
+                    </div>
+                </div>
+
+                <div class="load-more-bar">
+                    <button id="load-more" class="primary-btn-outline hidden">加载更多</button>
+                </div>
+            </section>
+
+            <section id="tab-stats" class="tab-content hidden">
+                <div class="panel-card" id="stats-panel"></div>
+            </section>
+
+            <section id="tab-crawler" class="tab-content hidden">
+                <div class="panel-card" id="crawler-panel"></div>
+            </section>
         </main>
+
+        <aside class="info-panel">
+            <section class="info-section">
+                <h2 class="info-title">总体指标</h2>
+                <div class="metric-grid">
+                    <div class="metric-card">
+                        <span class="metric-label">总导师</span>
+                        <span class="metric-value" id="metric-total">--</span>
+                    </div>
+                    <div class="metric-card">
+                        <span class="metric-label">等待反馈</span>
+                        <span class="metric-value" id="metric-in-progress">--</span>
+                    </div>
+                    <div class="metric-card">
+                        <span class="metric-label">已回复</span>
+                        <span class="metric-value" id="metric-replied">--</span>
+                    </div>
+                    <div class="metric-card">
+                        <span class="metric-label">回复率</span>
+                        <span class="metric-value" id="metric-reply-rate">--</span>
+                    </div>
+                    <div class="metric-card">
+                        <span class="metric-label">待跟进</span>
+                        <span class="metric-value" id="metric-followups">--</span>
+                    </div>
+                </div>
+            </section>
+
+            <section class="info-section">
+                <h2 class="info-title">工作概览</h2>
+                <div id="professors-overview" class="overview-list"></div>
+            </section>
+
+            <section class="info-section">
+                <h2 class="info-title">提醒</h2>
+                <div id="insights-panel" class="insight-list"></div>
+            </section>
+        </aside>
     </div>
 
-    <!-- 导师详情弹窗 -->
     <div id="professor-modal" class="modal-backdrop hidden">
-        <div class="modal-card max-w-3xl w-full">
+        <div class="modal-card">
             <div class="modal-body" id="modal-content"></div>
         </div>
     </div>
 
-    <!-- 新建导师弹窗 -->
     <div id="create-professor-modal" class="modal-backdrop hidden">
-        <div class="modal-card max-w-3xl w-full">
+        <div class="modal-card">
             <div class="modal-body">
-                <div class="flex items-center justify-between mb-6">
-                    <h2 class="text-xl font-semibold text-slate-800">新建导师</h2>
-                    <button id="create-professor-close" class="modal-close-btn" aria-label="关闭弹窗">×</button>
+                <div class="modal-header">
+                    <div>
+                        <h2 class="modal-title">新建导师</h2>
+                        <p class="modal-subtitle">补录爬虫未覆盖的导师信息</p>
+                    </div>
+                    <button id="create-professor-close" class="modal-close-btn" aria-label="关闭">×</button>
                 </div>
-                <form id="create-professor-form" class="space-y-5">
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div>
-                            <label for="create-professor-name" class="form-label">姓名 *</label>
-                            <input
-                                type="text"
-                                id="create-professor-name"
-                                name="name"
-                                required
-                                class="form-input"
-                                placeholder="请输入导师姓名"
-                            >
-                        </div>
-                        <div>
-                            <label for="create-professor-title" class="form-label">职称</label>
-                            <input
-                                type="text"
-                                id="create-professor-title"
-                                name="title"
-                                class="form-input"
-                                placeholder="如: Professor, Associate Professor"
-                            >
-                        </div>
-                    </div>
+                <form id="create-professor-form" class="modal-form-grid">
+                    <label class="modal-field">
+                        <span class="modal-field-label">姓名 *</span>
+                        <input type="text" id="create-professor-name" name="name" required class="modal-input" placeholder="导师姓名">
+                    </label>
 
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div>
-                            <label for="create-professor-university" class="form-label">所属学校 *</label>
-                            <select id="create-professor-university" name="university_id" required class="form-input">
-                                <option value="">请选择学校</option>
-                            </select>
-                        </div>
-                        <div>
-                            <label for="create-professor-email" class="form-label">邮箱</label>
-                            <input
-                                type="email"
-                                id="create-professor-email"
-                                name="email"
-                                class="form-input"
-                                placeholder="name@example.edu"
-                            >
-                        </div>
-                    </div>
+                    <label class="modal-field">
+                        <span class="modal-field-label">职称</span>
+                        <input type="text" id="create-professor-title" name="title" class="modal-input" placeholder="教授 / 副教授 / 讲师">
+                    </label>
 
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div>
-                            <label for="create-professor-phone" class="form-label">电话</label>
-                            <input
-                                type="text"
-                                id="create-professor-phone"
-                                name="phone"
-                                class="form-input"
-                                placeholder="可选"
-                            >
-                        </div>
-                        <div>
-                            <label for="create-professor-homepage" class="form-label">个人主页</label>
-                            <input
-                                type="url"
-                                id="create-professor-homepage"
-                                name="homepage"
-                                class="form-input"
-                                placeholder="https://example.edu.cn/~prof"
-                            >
-                        </div>
-                    </div>
+                    <label class="modal-field">
+                        <span class="modal-field-label">所属学校 *</span>
+                        <select id="create-professor-university" name="university_id" required class="modal-select">
+                            <option value="">请选择学校</option>
+                        </select>
+                    </label>
 
-                    <div>
-                        <label for="create-professor-office" class="form-label">办公室</label>
-                        <input
-                            type="text"
-                            id="create-professor-office"
-                            name="office_location"
-                            class="form-input"
-                            placeholder="可选"
-                        >
-                    </div>
+                    <label class="modal-field">
+                        <span class="modal-field-label">个人主页</span>
+                        <input type="url" id="create-professor-homepage" name="homepage" class="modal-input" placeholder="https://example.edu.cn/~prof">
+                    </label>
 
-                    <div>
-                        <label for="create-professor-areas" class="form-label">研究方向</label>
-                        <textarea
-                            id="create-professor-areas"
-                            name="research_areas"
-                            rows="3"
-                            class="form-textarea"
-                            placeholder="使用逗号或换行分隔多个方向"
-                        ></textarea>
-                    </div>
+                    <label class="modal-field">
+                        <span class="modal-field-label">办公室</span>
+                        <input type="text" id="create-professor-office" name="office_location" class="modal-input" placeholder="可选">
+                    </label>
 
-                    <div class="flex items-center justify-end gap-3 pt-2">
-                        <button type="button" id="create-professor-cancel" class="secondary-btn subtle">
-                            取消
-                        </button>
-                        <button type="submit" class="primary-btn">
-                            保存
-                        </button>
+                    <label class="modal-field span-2">
+                        <span class="modal-field-label">研究方向（使用逗号或换行分隔）</span>
+                        <textarea id="create-professor-areas" name="research_areas" rows="4" class="modal-textarea" placeholder="自动化控制, 智能系统, 机器学习"></textarea>
+                    </label>
+
+                    <div class="modal-form-actions span-2">
+                        <button type="button" id="create-professor-cancel" class="secondary-btn subtle">取消</button>
+                        <button type="submit" class="primary-btn">保存</button>
                     </div>
                 </form>
             </div>
         </div>
     </div>
 
-    <!-- 加载 JavaScript 模块 -->
     <script type="module" src="js/app.js"></script>
 </body>
 </html>

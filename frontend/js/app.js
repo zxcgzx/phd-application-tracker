@@ -250,8 +250,8 @@ async function handleCreateProfessorSubmit(event) {
         name,
         university_id: universityId,
         title: (formData.get('title') || '').trim() || null,
-        email: (formData.get('email') || '').trim() || null,
-        phone: (formData.get('phone') || '').trim() || null,
+        email: null,
+        phone: null,
         homepage: (formData.get('homepage') || '').trim() || null,
         office_location: (formData.get('office_location') || '').trim() || null,
         research_areas: null
