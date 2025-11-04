@@ -35,6 +35,8 @@ universities:
       research_areas:
         - keywords: ["研究方向", "研究领域", "Research Interests", "研究兴趣"]
           extract_method: "parent_text"
+        - selector_all: "p:has(strong:contains('研究方向')) ~ ul li, p:contains('研究方向') ~ ul li"
+        - selector_all: "ul li:contains('研究'), ol li:contains('研究')"
         - pattern: true
           keywords: ["研究方向", "研究领域"]
         - selector: ".research, .研究方向"
@@ -83,6 +85,8 @@ universities:
           keywords: ["研究方向", "Focus Area"]
         # 提取"Ø"符号标记的研究方向列表
         - selector_all: "p:contains('研究方向') ~ p, p:contains('Focus Area') ~ p"
+        - selector_all: "p:contains('研究方向') ~ ul li, p:contains('Focus Area') ~ ul li"
+        - selector_all: "ul li:contains('研究'), ol li:contains('研究')"
 
       office:
         - keywords: ["办公地址", "办公室", "Office"]
@@ -128,6 +132,8 @@ universities:
           keywords: ["研究方向", "研究领域"]
         # 从个人简介中提取研究关键词
         - selector: ".profile_content, .introduction"
+        - selector_all: "p:contains('研究方向') ~ ul li, p:contains('Research Interests') ~ ul li"
+        - selector_all: "ul li:contains('研究'), ol li:contains('Research')"
 
       office:
         - keywords: ["办公地点", "办公室", "Office"]

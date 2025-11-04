@@ -781,6 +781,12 @@ button.is-loading,
     font-size: 0.75rem;
 }
 
+.research-tag-more {
+    background-color: #e0f2fe;
+    color: #0369a1;
+    font-weight: 700;
+}
+
 /* Toast 与加载动画 */
 .toast {
     position: fixed;

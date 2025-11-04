@@ -109,6 +109,8 @@ class BaseScraper:
         Returns:
             提取的文本
         """
+        collected: List[str] = []
+
         for keyword in keywords:
             # 查找包含关键词的元素
             elements = soup.find_all(string=re.compile(keyword))
@@ -119,14 +121,20 @@ class BaseScraper:
                     parent = elem.parent
                     if parent:
                         next_elem = parent.find_next_sibling()
+                        while next_elem and not next_elem.get_text(strip=True):
+                            next_elem = next_elem.find_next_sibling()
                         if next_elem:
-                            return next_elem.get_text(strip=True)
+                            collected.append(next_elem.get_text("\n", strip=True))
 
                 elif extract_method == 'parent_text':
                     # 提取父节点的完整文本
                     parent = elem.parent
                     if parent:
-                        return parent.get_text(strip=True)
+                        collected.append(parent.get_text("\n", strip=True))
+
+        if collected:
+            deduped = list(dict.fromkeys([text for text in collected if text]))
+            return "\n".join(deduped)
 
         return None
 
@@ -206,6 +214,24 @@ class BaseScraper:
         """提取研究方向（增强版，支持更多提取方式）"""
         areas = []
 
+        def split_text_to_areas(text: str) -> List[str]:
+            if not text:
+                return []
+            # 拆分前先统一分隔符，处理编号和符号
+            replaced = re.sub(r'(?:\r\n|\r)', '\n', text)
+            # 将带编号的项目替换为换行分隔，便于拆分
+            replaced = re.sub(r'(?<=\n)(\s*[①-⑩ⅰ-ⅹ]|[(（]?[0-9]{1,2}[)）.]|\s*[0-9]{1,2}[.、)])', r'\n\1', replaced)
+            raw_items = re.split(r'[,\n;；，、]', replaced)
+            cleaned = []
+            for item in raw_items:
+                piece = item.strip()
+                piece = re.sub(r'^[0-9]{1,2}[)\.、．]\s*', '', piece)
+                piece = re.sub(r'^[（(][0-9]{1,2}[)）]\s*', '', piece)
+                piece = re.sub(r'^[①-⑩Ⅰ-Ⅹⅰ-ⅹIVXivx·•\-\*\s]+', '', piece)
+                if piece and len(piece) > 1:
+                    cleaned.append(piece)
+            return cleaned
+
         for rule in config:
             # 方法1：通过关键词定位后提取
             if 'keywords' in rule:
@@ -215,12 +241,7 @@ class BaseScraper:
                     rule.get('extract_method', 'next_sibling_text')
                 )
                 if text:
-                    # 分割研究方向（通过逗号、分号、顿号、换行等）
-                    areas = re.split(r'[,;、，；\n]', text)
-                    areas = [a.strip() for a in areas if a.strip()]
-                    # 去除空项和"Ø"等符号
-                    areas = [re.sub(r'^[ØØ·•\-\*\s]+', '', a) for a in areas]
-                    areas = [a for a in areas if a and len(a) > 1]
+                    areas = split_text_to_areas(text)
                     if areas:
                         break
 
@@ -228,11 +249,8 @@ class BaseScraper:
             if 'selector' in rule:
                 elem = soup.select_one(rule['selector'])
                 if elem:
-                    text = elem.get_text(strip=True)
-                    areas = re.split(r'[,;、，；\n]', text)
-                    areas = [a.strip() for a in areas if a.strip()]
-                    areas = [re.sub(r'^[ØØ·•\-\*\s]+', '', a) for a in areas]
-                    areas = [a for a in areas if a and len(a) > 1]
+                    text = elem.get_text(" ", strip=True)
+                    areas = split_text_to_areas(text)
                     if areas:
                         break
 
@@ -240,10 +258,11 @@ class BaseScraper:
             if 'selector_all' in rule:
                 elements = soup.select(rule['selector_all'])
                 for elem in elements:
-                    text = elem.get_text(strip=True)
-                    text = re.sub(r'^[ØØ·•\-\*\s]+', '', text)
-                    if text and len(text) > 1:
-                        areas.append(text)
+                    text = elem.get_text(" ", strip=True)
+                    items = split_text_to_areas(text) or [text]
+                    for item in items:
+                        if item and len(item) > 1:
+                            areas.append(item)
                 if areas:
                     break
 
@@ -252,20 +271,18 @@ class BaseScraper:
                 text = soup.get_text()
                 # 查找包含关键词的段落
                 for keyword in rule.get('keywords', ['研究方向', '研究领域']):
-                    pattern = f'{keyword}[：:](.*?)(?:\n|$)'
-                    match = re.search(pattern, text)
+                    pattern = f'{keyword}[：:](.*?)(?:\\n\\s*\\n|$)'
+                    match = re.search(pattern, text, flags=re.IGNORECASE | re.DOTALL)
                     if match:
                         text_content = match.group(1).strip()
-                        areas = re.split(r'[,;、，；\n]', text_content)
-                        areas = [a.strip() for a in areas if a.strip()]
-                        areas = [re.sub(r'^[ØØ·•\-\*\s]+', '', a) for a in areas]
-                        areas = [a for a in areas if a and len(a) > 1]
+                        areas = split_text_to_areas(text_content)
                         if areas:
                             break
                 if areas:
                     break
 
-        return areas[:10]  # 最多返回10个研究方向
+        deduped = list(dict.fromkeys(areas))
+        return deduped[:10]  # 最多返回10个研究方向
 
     def clean_text(self, text: Optional[str]) -> Optional[str]:
         """

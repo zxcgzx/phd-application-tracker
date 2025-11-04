@@ -51,11 +51,17 @@ export function renderProfessorCard(professor, application, state) {
     const replySummary = application?.reply_summary ? escapeHtml(application.reply_summary) : ''
     const uniName = professor.universities?.name || '未知学校'
 
-    // 研究方向标签
-    const researchTags = (professor.research_areas || [])
-        .slice(0, 3)
+    const researchAreas = Array.isArray(professor.research_areas)
+        ? professor.research_areas.filter(Boolean)
+        : []
+    const displayAreas = researchAreas.slice(0, 5)
+    const remainingAreas = Math.max(0, researchAreas.length - displayAreas.length)
+
+    const researchTags = displayAreas
         .map(area => `<span class="research-tag">${escapeHtml(area)}</span>`)
-        .join('')
+        .join('') + (remainingAreas > 0
+            ? `<span class="research-tag research-tag-more">+${remainingAreas}</span>`
+            : '')
 
     // 优先级星星
     const stars = Array.from({ length: 5 }, (_, i) => {
