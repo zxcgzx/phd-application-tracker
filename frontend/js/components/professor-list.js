@@ -208,7 +208,6 @@ export function renderProfessorCard(professor, application, state) {
                     </div>
                 </section>
 
-                ${(professor.email || professor.phone || professor.homepage) ? `
                 ${application ? `
                     <section class="application-summary">
                         <div class="application-grid">
