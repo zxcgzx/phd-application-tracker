@@ -6,6 +6,15 @@ import { showToast } from '../core/feedback.js'
 import { upsertApplication } from '../core/store.js'
 
 const QUICK_STATUS_SEQUENCE = ['待发送', '已发送', '已读', '已回复', '待面试', '已接受', '已拒绝']
+const STATUS_ACCENTS = {
+    '待发送': 'accent-neutral',
+    '已发送': 'accent-blue',
+    '已读': 'accent-indigo',
+    '已回复': 'accent-emerald',
+    '待面试': 'accent-amber',
+    '已接受': 'accent-teal',
+    '已拒绝': 'accent-rose'
+}
 const HTML_ESCAPE_MAP = {
     '&': '&amp;',
     '<': '&lt;',
@@ -57,12 +66,12 @@ export function renderProfessorCard(professor, application, state) {
 
     const tagChips = tags.length > 0
         ? `
-            <div class="mt-3">
-                <p class="text-xs text-gray-500 mb-1">🏷️ 标签:</p>
-                <div class="flex flex-wrap gap-2">
+            <section class="card-section">
+                <p class="card-section-title">🏷️ 标签</p>
+                <div class="tag-grid">
                     ${tags.map(tag => `<span class="tag-chip">${escapeHtml(tag)}</span>`).join('')}
                 </div>
-            </div>
+            </section>
         `
         : ''
 
@@ -126,110 +135,169 @@ export function renderProfessorCard(professor, application, state) {
 
     const quickActionSection = quickActions.length > 0
         ? `
-            <div class="quick-action-group mt-3">
-                <p class="text-xs text-gray-500 mb-1">快捷操作</p>
-                <div class="flex flex-wrap gap-2">
+            <div class="quick-action-group">
+                <p class="quick-action-title">快捷操作</p>
+                <div class="quick-action-buttons">
                     ${quickActions.join('')}
                 </div>
             </div>
         `
         : ''
 
-    return `
-        <div class="professor-card bg-white rounded-lg shadow-sm p-4 relative hover:shadow-md transition-shadow">
-            ${batchCheckbox}
-
-            <!-- 头部 -->
-            <div class="flex items-start justify-between mb-3 ${state.batchMode ? 'ml-7' : ''}">
-                <div class="flex-1">
-                    <h3 class="text-lg font-semibold text-gray-800">${professor.name}</h3>
-                    <p class="text-sm text-gray-500">${professor.title || '未知职称'}</p>
-                </div>
-                <div class="flex flex-col items-end gap-2">
-                    <span class="status-badge status-${status}">${status}</span>
-                    <div class="priority-stars text-sm" title="${priorityTitle}">
-                        ${stars}
-                    </div>
-                </div>
-            </div>
-
-            <!-- 学校 -->
-            <p class="text-sm text-gray-600 mb-2">
-                🏫 ${uniName}
-            </p>
-
-            <!-- 研究方向 -->
-            <div class="mb-3">
-                <p class="text-xs text-gray-500 mb-1">🔬 研究方向:</p>
-                <div class="flex flex-wrap">
-                    ${researchTags || '<span class="text-xs text-gray-400">未填写</span>'}
-                </div>
-            </div>
-
-            <!-- 联系方式 -->
-            ${professor.email ? `
-                <p class="text-sm text-gray-600 mb-2 truncate">
-                    📧 ${professor.email}
-                </p>
-            ` : ''}
-
-            <!-- 申请信息 -->
-            ${application ? `
-                <div class="border-t pt-3 mt-3 text-xs text-gray-500">
-                    <div class="flex justify-between items-center">
-                        <span>发送人: ${sentBy}</span>
-                        ${matchScore > 0 ? `<span>匹配度: ${'⭐'.repeat(matchScore)}</span>` : ''}
-                    </div>
-                    ${application.sent_at ? `
-                        <p class="mt-1">⏰ ${new Date(application.sent_at).toLocaleDateString('zh-CN')}</p>
-                    ` : ''}
-                    ${nextFollowup ? `
-                        <p class="mt-1 text-indigo-600 font-medium">🔔 下次跟进: ${nextFollowup}</p>
-                    ` : ''}
-                    ${replySummary ? `
-                        <p class="mt-2 text-gray-600 leading-relaxed">💬 ${replySummary}</p>
-                    ` : ''}
-                </div>
-            ` : ''}
-
-            <div class="quick-status-group mt-4">
-                <p class="text-xs text-gray-500 mb-1">状态快选</p>
+    const accentClass = STATUS_ACCENTS[status] || STATUS_ACCENTS['待发送']
+    const matchChip = matchScore > 0
+        ? `<span class="match-chip">匹配度 ${matchScore}★</span>`
+        : ''
+    const followupBadge = nextFollowup
+        ? `<span class="followup-chip">🔔 ${nextFollowup}</span>`
+        : ''
+    const followupControls = application
+        ? `
+            <div class="quick-followup-group">
+                <p class="quick-followup-label">快速安排跟进</p>
                 <div class="flex flex-wrap gap-2">
-                    ${quickStatusButtons}
+                    <button
+                        type="button"
+                        data-action="schedule-followup"
+                        data-professor-id="${professor.id}"
+                        data-days="3"
+                        class="quick-followup-btn"
+                    >
+                        +3 天提醒
+                    </button>
+                    <button
+                        type="button"
+                        data-action="schedule-followup"
+                        data-professor-id="${professor.id}"
+                        data-days="7"
+                        class="quick-followup-btn"
+                    >
+                        +7 天提醒
+                    </button>
                 </div>
             </div>
+        `
+        : ''
 
-            ${quickActionSection}
+    return `
+        <article class="professor-card glass-card ${accentClass}">
+            ${batchCheckbox}
+            <span class="card-accent"></span>
 
-            <!-- 操作按钮 -->
-            <div class="mt-4 flex flex-wrap gap-2">
-                <button
-                    data-action="view-detail"
-                    data-professor-id="${professor.id}"
-                    class="flex-1 px-3 py-2 bg-blue-600 text-white text-sm rounded hover:bg-blue-700 transition-colors"
-                >
-                    查看详情
-                </button>
-                ${status === '待发送' ? `
-                    <button
-                        data-action="mark-sent"
-                        data-professor-id="${professor.id}"
-                        class="px-3 py-2 bg-green-600 text-white text-sm rounded hover:bg-green-700 transition-colors"
-                    >
-                        标记已发送
-                    </button>
+            <div class="card-content ${state.batchMode ? 'pl-6 md:pl-8' : ''}">
+                <header class="card-header">
+                    <div>
+                        <div class="flex items-center gap-2 mb-1">
+                            <h3 class="card-title">${professor.name}</h3>
+                            ${matchChip}
+                        </div>
+                        <p class="card-subtitle">${professor.title || '未知职称'}</p>
+                        <div class="card-meta-line">
+                            <span class="university-chip">🏫 ${uniName}</span>
+                            ${sentBy ? `<span class="operator-chip">由 ${sentBy} 跟进</span>` : ''}
+                        </div>
+                    </div>
+                    <div class="card-status">
+                        <span class="status-badge status-${status}">${status}</span>
+                        <div class="priority-stars text-sm" title="${priorityTitle}">
+                            ${stars}
+                        </div>
+                        ${followupBadge}
+                    </div>
+                </header>
+
+                <section class="card-section">
+                    <p class="card-section-title">🔬 研究方向</p>
+                    <div class="card-tags">
+                        ${researchTags || '<span class="text-xs text-gray-400">未填写</span>'}
+                    </div>
+                </section>
+
+                ${(professor.email || professor.phone || professor.homepage) ? `
+                    <section class="card-section">
+                        <p class="card-section-title">📮 联系方式</p>
+                        <div class="contact-grid">
+                            ${professor.email ? `<span class="contact-chip truncate">📧 ${professor.email}</span>` : ''}
+                            ${professor.phone ? `<span class="contact-chip">📞 ${professor.phone}</span>` : ''}
+                            ${professor.homepage ? `<a href="${escapeHtml(professor.homepage)}" target="_blank" rel="noopener" class="contact-chip contact-link">主页 ↗</a>` : ''}
+                        </div>
+                    </section>
                 ` : ''}
-                <button
-                    data-action="delete-professor"
-                    data-professor-id="${professor.id}"
-                    class="px-3 py-2 bg-red-100 text-red-700 text-sm rounded hover:bg-red-200 transition-colors"
-                >
-                    删除
-                </button>
-            </div>
 
-            ${tagChips}
-        </div>
+                ${application ? `
+                    <section class="application-summary">
+                        <div class="application-grid">
+                            <div>
+                                <p class="summary-label">状态</p>
+                                <p class="summary-value">${status}</p>
+                            </div>
+                            <div>
+                                <p class="summary-label">操作人</p>
+                                <p class="summary-value">${sentBy || '未知'}</p>
+                            </div>
+                            ${application.sent_at ? `
+                                <div>
+                                    <p class="summary-label">发送时间</p>
+                                    <p class="summary-value">${new Date(application.sent_at).toLocaleDateString('zh-CN')}</p>
+                                </div>
+                            ` : ''}
+                            ${application.replied_at ? `
+                                <div>
+                                    <p class="summary-label">回复时间</p>
+                                    <p class="summary-value">${new Date(application.replied_at).toLocaleDateString('zh-CN')}</p>
+                                </div>
+                            ` : ''}
+                        </div>
+                        ${replySummary ? `
+                            <p class="summary-note">💬 ${replySummary}</p>
+                        ` : ''}
+                    </section>
+                ` : `
+                    <section class="application-empty">
+                        <p>尚未创建申请记录，点击下方按钮即可快速创建。</p>
+                    </section>
+                `}
+
+                <section class="quick-status-group">
+                    <p class="quick-status-title">状态快选</p>
+                    <div class="quick-status-buttons">
+                        ${quickStatusButtons}
+                    </div>
+                </section>
+
+                ${followupControls}
+
+                ${quickActionSection}
+
+                ${tagChips}
+
+                <footer class="card-footer">
+                    <button
+                        data-action="view-detail"
+                        data-professor-id="${professor.id}"
+                        class="primary-btn"
+                    >
+                        查看详情
+                    </button>
+                    ${status === '待发送' ? `
+                        <button
+                            data-action="mark-sent"
+                            data-professor-id="${professor.id}"
+                            class="accent-btn"
+                        >
+                            标记已发送
+                        </button>
+                    ` : ''}
+                    <button
+                        data-action="delete-professor"
+                        data-professor-id="${professor.id}"
+                        class="danger-outline-btn"
+                    >
+                        删除
+                    </button>
+                </footer>
+            </div>
+        </article>
     `
 }
 

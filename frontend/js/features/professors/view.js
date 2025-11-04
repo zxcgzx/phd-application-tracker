@@ -87,7 +87,8 @@ let handlerRef = {
     onMarkSent: null,
     onSelectionChange: null,
     onQuickStatusChange: null,
-    onDeleteProfessor: null
+    onDeleteProfessor: null,
+    onScheduleFollowup: null
 }
 
 async function copyText(value) {
@@ -202,6 +203,38 @@ export function bindProfessorCardEvents(state, handlers = {}) {
                     sentBtn.disabled = false
                     sentBtn.classList.remove('is-loading')
                     sentBtn.textContent = originalText
+                }
+            }
+            return
+        }
+
+        const followupBtn = event.target.closest('[data-action="schedule-followup"]')
+        if (followupBtn) {
+            const professorId = followupBtn.dataset.professorId
+            const daysRaw = followupBtn.dataset.days || '3'
+            const days = Number(daysRaw)
+
+            if (professorId && typeof handlerRef.onScheduleFollowup === 'function') {
+                const originalText = followupBtn.textContent
+                followupBtn.disabled = true
+                followupBtn.classList.add('is-loading')
+                followupBtn.textContent = '设置中...'
+
+                const success = await handlerRef.onScheduleFollowup(professorId, Number.isFinite(days) && days > 0 ? days : 3)
+
+                if (!success && followupBtn.isConnected) {
+                    followupBtn.disabled = false
+                    followupBtn.classList.remove('is-loading')
+                    followupBtn.textContent = originalText
+                } else if (success && followupBtn.isConnected) {
+                    followupBtn.classList.remove('is-loading')
+                    followupBtn.textContent = '已更新'
+                    setTimeout(() => {
+                        if (followupBtn.isConnected) {
+                            followupBtn.disabled = false
+                            followupBtn.textContent = originalText
+                        }
+                    }, 1200)
                 }
             }
             return

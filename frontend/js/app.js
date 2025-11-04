@@ -4,10 +4,11 @@
 
 import { supabase, checkConfig } from './supabase-config.js'
 import { openProfessorModal } from './components/professor-list.js'
+import { renderProfessorsOverview } from './components/professor-overview.js'
 import { renderStatsPanel } from './components/stats-dashboard.js'
 import { renderCrawlerPanel } from './components/crawler-manager.js'
-import { renderTemplatesPanel } from './components/email-templates.js'
 import { showToast, showLoading } from './core/feedback.js'
+import { calculateStats } from './core/stats.js'
 import {
     state,
     setCurrentTab,
@@ -458,6 +459,11 @@ function bindEvents() {
         })
     }
 
+    const statusPills = document.getElementById('status-pills')
+    if (statusPills) {
+        statusPills.addEventListener('click', handleStatusPillClick)
+    }
+
     // 关闭弹窗
     document.getElementById('professor-modal').addEventListener('click', (e) => {
         if (e.target.id === 'professor-modal') {
@@ -473,9 +479,9 @@ function switchTab(tabName) {
     // 更新按钮样式
     document.querySelectorAll('.tab-btn').forEach(btn => {
         if (btn.dataset.tab === tabName) {
-            btn.className = 'tab-btn border-primary text-primary whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm'
+            btn.classList.add('is-active')
         } else {
-            btn.className = 'tab-btn border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm'
+            btn.classList.remove('is-active')
         }
     })
 
@@ -490,8 +496,6 @@ function switchTab(tabName) {
         renderStatsPanel(state)
     } else if (tabName === 'crawler') {
         renderCrawlerPanel()
-    } else if (tabName === 'templates') {
-        renderTemplatesPanel()
     }
 }
 
@@ -563,6 +567,7 @@ function refreshProfessorsView() {
         onMarkSent: markAsSent,
         onQuickStatusChange: changeProfessorStatus,
         onDeleteProfessor: deleteProfessor,
+        onScheduleFollowup: scheduleQuickFollowup,
         onSelectionChange: (professorId, checked) => {
             if (!professorId) return
             if (checked) {
@@ -575,6 +580,9 @@ function refreshProfessorsView() {
     })
     updateBatchSelectionView(state)
     updateLoadMoreButton(filtered.length, visibleCount)
+
+    const stats = calculateStats(state)
+    renderProfessorsOverview({ state, stats })
 }
 
 function updateLoadMoreButton(totalCount, visibleCount) {
@@ -594,6 +602,21 @@ function updateLoadMoreButton(totalCount, visibleCount) {
 // 应用筛选
 function applyFilters() {
     refreshProfessorsView()
+}
+
+function handleStatusPillClick(event) {
+    const pill = event.target.closest('[data-status-filter]')
+    if (!pill) return
+
+    const selectedStatus = pill.dataset.statusFilter || ''
+    const currentStatus = state.filters.status || ''
+    const nextStatus = currentStatus === selectedStatus ? '' : selectedStatus
+
+    updateFilters({ status: nextStatus })
+    setDisplayLimit(DEFAULT_PAGE_SIZE)
+    scheduleFiltersPersist()
+    syncFilterControlsFromState()
+    applyFilters()
 }
 
 // 更新申请状态的通用方法，确保批量操作与快捷操作可复用
@@ -696,6 +719,48 @@ async function changeProfessorStatus(professorId, status) {
         return false
     }
     return updateApplicationStatus(professorId, status)
+}
+
+async function scheduleQuickFollowup(professorId, days = 3) {
+    if (!professorId) {
+        return false
+    }
+
+    const application = state.applications.get(professorId)
+    if (!application) {
+        showToast('请先创建申请记录后再设置跟进提醒', 'info')
+        return false
+    }
+
+    try {
+        const sanitizedDays = Number.isFinite(days) && days > 0 ? Math.round(days) : 3
+        const target = new Date()
+        target.setDate(target.getDate() + sanitizedDays)
+
+        const payload = {
+            next_followup_at: target.toISOString(),
+            updated_at: new Date().toISOString()
+        }
+
+        const { data, error } = await supabase
+            .from('applications')
+            .update(payload)
+            .eq('id', application.id)
+            .select()
+            .single()
+
+        if (error) throw error
+
+        upsertApplication(professorId, data)
+        showToast(`已设置 ${sanitizedDays} 天后的跟进提醒`)
+        refreshProfessorsView()
+        return true
+
+    } catch (error) {
+        console.error('设置跟进提醒失败:', error)
+        showToast('设置跟进提醒失败: ' + error.message, 'error')
+        return false
+    }
 }
 
 // 批量标记
@@ -802,12 +867,12 @@ function syncBatchModeUI() {
 
     if (state.batchMode) {
         batchActions.classList.remove('hidden')
-        batchBtn.classList.add('bg-blue-600', 'text-white')
-        batchBtn.classList.remove('bg-gray-100', 'text-gray-700')
+        batchBtn.classList.add('primary-btn')
+        batchBtn.classList.remove('secondary-btn')
     } else {
         batchActions.classList.add('hidden')
-        batchBtn.classList.remove('bg-blue-600', 'text-white')
-        batchBtn.classList.add('bg-gray-100', 'text-gray-700')
+        batchBtn.classList.add('secondary-btn')
+        batchBtn.classList.remove('primary-btn')
     }
 
     updateBatchSelectionView(state)
@@ -887,8 +952,8 @@ function updateCurrentUser() {
         <option value="${user}" ${state.currentUser === user ? 'selected' : ''}>${user}</option>
     `).join('')
     userSpan.innerHTML = `
-        当前用户:
-        <select class="ml-1 border-none bg-transparent font-semibold cursor-pointer" id="user-selector">
+        <span class="hero-user-label">当前用户</span>
+        <select class="hero-user-select" id="user-selector">
             ${optionsHtml}
         </select>
     `

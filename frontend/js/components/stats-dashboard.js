@@ -2,6 +2,8 @@
  * 统计面板组件
  */
 
+import { calculateStats } from '../core/stats.js'
+
 export function renderStatsPanel(state) {
     const container = document.getElementById('stats-panel')
 
@@ -64,97 +66,6 @@ export function renderStatsPanel(state) {
             </div>
         </div>
     `
-}
-
-function calculateStats(state) {
-    const stats = {
-        total: state.professors.length,
-        sent: 0,
-        replied: 0,
-        interview: 0,
-        accepted: 0,
-        rejected: 0,
-        pending: 0,
-        replyRate: 0,
-        byUniversity: new Map(),
-        byOperator: new Map(),
-        todos: []
-    }
-
-    // 统计各状态数量
-    state.professors.forEach(prof => {
-        const app = state.applications.get(prof.id)
-        const status = app?.status || '待发送'
-
-        if (status === '已发送' || status === '已读') stats.sent++
-        if (status === '已回复') stats.replied++
-        if (status === '待面试') stats.interview++
-        if (status === '已接受') stats.accepted++
-        if (status === '已拒绝') stats.rejected++
-        if (status === '待发送') stats.pending++
-
-        // 按学校统计
-        const uniName = prof.universities?.name || '未知学校'
-        const uniStats = stats.byUniversity.get(uniName) || { total: 0, sent: 0, replied: 0 }
-        uniStats.total++
-        if (status !== '待发送') uniStats.sent++
-        if (status === '已回复' || status === '待面试' || status === '已接受') uniStats.replied++
-        stats.byUniversity.set(uniName, uniStats)
-
-        // 按操作人统计
-        const operator = app?.sent_by || '无'
-        const opStats = stats.byOperator.get(operator) || { total: 0, replied: 0 }
-        opStats.total++
-        if (status === '已回复') opStats.replied++
-        stats.byOperator.set(operator, opStats)
-
-        // 待办事项
-        if (app && app.sent_at && !app.replied_at) {
-            const daysSinceSent = Math.floor(
-                (Date.now() - new Date(app.sent_at).getTime()) / (1000 * 60 * 60 * 24)
-            )
-            if (daysSinceSent >= 7) {
-                stats.todos.push({
-                    type: 'follow-up',
-                    message: `${prof.name} 已发送 ${daysSinceSent} 天未回复`,
-                    professorId: prof.id,
-                    severity: daysSinceSent >= 14 ? 'danger' : 'warning'
-                })
-            }
-        }
-
-        if (app?.next_followup_at) {
-            const nextFollowupDate = new Date(app.next_followup_at)
-            if (!Number.isNaN(nextFollowupDate.getTime())) {
-                const diffMs = nextFollowupDate.getTime() - Date.now()
-                const dueText = nextFollowupDate.toLocaleString('zh-CN', { hour12: false })
-                if (diffMs <= 0) {
-                    const overdueHours = Math.abs(Math.round(diffMs / (1000 * 60 * 60)))
-                    stats.todos.push({
-                        type: 'follow-up-due',
-                        message: `${prof.name} 的跟进已逾期 ${overdueHours} 小时，计划时间 ${dueText}`,
-                        professorId: prof.id,
-                        severity: 'danger'
-                    })
-                } else if (diffMs <= 48 * 60 * 60 * 1000) {
-                    const remainingHours = Math.max(1, Math.round(diffMs / (1000 * 60 * 60)))
-                    stats.todos.push({
-                        type: 'follow-up-soon',
-                        message: `${prof.name} 还有 ${remainingHours} 小时到预定跟进时间 (${dueText})`,
-                        professorId: prof.id,
-                        severity: 'warning'
-                    })
-                }
-            }
-        }
-    })
-
-    // 计算回复率
-    if (stats.sent > 0) {
-        stats.replyRate = Math.round((stats.replied / stats.sent) * 100)
-    }
-
-    return stats
 }
 
 function renderUniversityStats(byUniversity) {
