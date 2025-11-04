@@ -15,7 +15,7 @@ export const state = {
     professors: [],
     applications: new Map(),
     universities: new Map(),
-    currentUser: '你',
+    currentUser: 'Zhang',
     filters: { ...defaultFilters },
     batchMode: false,
     selectedProfessors: new Set(),

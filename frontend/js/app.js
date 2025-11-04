@@ -37,7 +37,42 @@ const STATUS_NEEDS_SENT_AT = new Set(['已发送', '已读', '已回复', '待�
 const STATUS_NEEDS_REPLIED_AT = new Set(['已回复'])
 const FILTER_STORAGE_KEY = 'phd_tracker_filters_v1'
 const CREATE_PROFESSOR_MODAL_ID = 'create-professor-modal'
+const USER_OPTIONS = ['Zhang', 'Shi']
+const LEGACY_USER_MAP = {
+    '你': 'Zhang',
+    '女朋友': 'Shi'
+}
 let filterPersistTimer = null
+let legacyUserMigrated = false
+
+function normalizeUserName(value, options = {}) {
+    const allowEmpty = options.allowEmpty ?? false
+    if (!value) {
+        return allowEmpty ? '' : USER_OPTIONS[0]
+    }
+    const mapped = LEGACY_USER_MAP[value] || value
+    if (USER_OPTIONS.includes(mapped)) {
+        return mapped
+    }
+    return allowEmpty ? '' : USER_OPTIONS[0]
+}
+
+async function migrateLegacySentBy() {
+    if (legacyUserMigrated) return
+    try {
+        await supabase.from('applications')
+            .update({ sent_by: 'Zhang' })
+            .eq('sent_by', '你')
+
+        await supabase.from('applications')
+            .update({ sent_by: 'Shi' })
+            .eq('sent_by', '女朋友')
+    } catch (error) {
+        console.warn('迁移旧操作人失败:', error)
+    } finally {
+        legacyUserMigrated = true
+    }
+}
 
 function scheduleFiltersPersist() {
     if (filterPersistTimer) {
@@ -79,7 +114,7 @@ function restoreFiltersFromStorage() {
                 search: parsed.search || '',
                 university: parsed.university || '',
                 status: parsed.status || '',
-                sentBy: parsed.sentBy || ''
+                sentBy: normalizeUserName(parsed.sentBy, { allowEmpty: true })
             })
         }
     } catch (error) {
@@ -466,6 +501,8 @@ async function loadData() {
         showLoading(document.getElementById('professors-grid'))
         setDisplayLimit(DEFAULT_PAGE_SIZE)
 
+        await migrateLegacySentBy()
+
         // 加载学校
         const { data: universities } = await supabase
             .from('universities')
@@ -503,7 +540,9 @@ async function loadData() {
         const applicationsMap = new Map()
         professors?.forEach(prof => {
             if (prof.applications && prof.applications.length > 0) {
-                applicationsMap.set(prof.id, prof.applications[0])
+                const record = { ...prof.applications[0] }
+                record.sent_by = normalizeUserName(record.sent_by, { allowEmpty: true })
+                applicationsMap.set(prof.id, record)
             }
         })
         setApplications(applicationsMap)
@@ -618,7 +657,7 @@ async function updateApplicationStatus(professorId, status, options = {}) {
 
             const { data, error } = await supabase
                 .from('applications')
-                .insert(insertPayload)
+                .upsert(insertPayload, { onConflict: 'professor_id' })
                 .select()
                 .single()
 
@@ -840,20 +879,22 @@ function setupRealtimeSubscription() {
 // 更新当前用户显示
 function updateCurrentUser() {
     // 可以从 localStorage 读取
-    const savedUser = localStorage.getItem('currentUser') || '你'
+    const savedUser = normalizeUserName(localStorage.getItem('currentUser'))
     setCurrentUser(savedUser)
 
     const userSpan = document.getElementById('current-user')
+    const optionsHtml = USER_OPTIONS.map(user => `
+        <option value="${user}" ${state.currentUser === user ? 'selected' : ''}>${user}</option>
+    `).join('')
     userSpan.innerHTML = `
         当前用户:
         <select class="ml-1 border-none bg-transparent font-semibold cursor-pointer" id="user-selector">
-            <option value="你" ${state.currentUser === '你' ? 'selected' : ''}>你</option>
-            <option value="女朋友" ${state.currentUser === '女朋友' ? 'selected' : ''}>女朋友</option>
+            ${optionsHtml}
         </select>
     `
 
     document.getElementById('user-selector').addEventListener('change', (e) => {
-        const nextUser = e.target.value
+        const nextUser = normalizeUserName(e.target.value)
         setCurrentUser(nextUser)
         localStorage.setItem('currentUser', nextUser)
         showToast(`已切换到 ${nextUser}`)
