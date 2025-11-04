@@ -196,6 +196,56 @@ export function bindProfessorCardEvents(state, handlers = {}) {
             return
         }
 
+        const applyCustomBtn = event.target.closest('[data-action="apply-custom-followup"]')
+        if (applyCustomBtn) {
+            const professorId = applyCustomBtn.dataset.professorId
+            if (!professorId || typeof handlerRef.onScheduleFollowup !== 'function') {
+                return
+            }
+
+            const input = container.querySelector(`input[data-action="custom-followup"][data-professor-id="${professorId}"]`)
+            if (!input) {
+                return
+            }
+
+            const value = input.value
+            if (!value) {
+                showToast('请选择跟进时间', 'error')
+                return
+            }
+
+            try {
+                applyCustomBtn.disabled = true
+                applyCustomBtn.classList.add('is-loading')
+                applyCustomBtn.textContent = '设置中...'
+
+                const success = await handlerRef.onScheduleFollowup(professorId, null, { targetISO: value })
+                if (success && applyCustomBtn.isConnected) {
+                    applyCustomBtn.textContent = '已更新'
+                    setTimeout(() => {
+                        if (applyCustomBtn.isConnected) {
+                            applyCustomBtn.disabled = false
+                            applyCustomBtn.classList.remove('is-loading')
+                            applyCustomBtn.textContent = '保存'
+                        }
+                    }, 1200)
+                } else if (applyCustomBtn.isConnected) {
+                    applyCustomBtn.disabled = false
+                    applyCustomBtn.classList.remove('is-loading')
+                    applyCustomBtn.textContent = '保存'
+                }
+            } catch (error) {
+                console.error('设置自定义跟进失败:', error)
+                showToast('设置自定义跟进失败', 'error')
+                if (applyCustomBtn.isConnected) {
+                    applyCustomBtn.disabled = false
+                    applyCustomBtn.classList.remove('is-loading')
+                    applyCustomBtn.textContent = '保存'
+                }
+            }
+            return
+        }
+
         const deleteBtn = event.target.closest('[data-action="delete-professor"]')
         if (deleteBtn) {
             const professorId = deleteBtn.dataset.professorId

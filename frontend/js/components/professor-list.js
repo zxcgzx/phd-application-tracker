@@ -120,29 +120,52 @@ export function renderProfessorCard(professor, application, state) {
     const followupBadge = nextFollowup
         ? `<span class="followup-chip">🔔 ${nextFollowup}</span>`
         : ''
+    const nextFollowupISO = application?.next_followup_at
+        ? new Date(application.next_followup_at).toISOString().slice(0, 16)
+        : ''
     const followupControls = application
         ? `
             <div class="quick-followup-group">
-                <p class="quick-followup-label">快速安排跟进</p>
-                <div class="flex flex-wrap gap-2">
-                    <button
-                        type="button"
-                        data-action="schedule-followup"
-                        data-professor-id="${professor.id}"
-                        data-days="3"
-                        class="quick-followup-btn"
-                    >
-                        +3 天提醒
-                    </button>
-                    <button
-                        type="button"
-                        data-action="schedule-followup"
-                        data-professor-id="${professor.id}"
-                        data-days="7"
-                        class="quick-followup-btn"
-                    >
-                        +7 天提醒
-                    </button>
+                <p class="quick-followup-label">安排跟进</p>
+                <div class="followup-controls">
+                    <div class="followup-presets">
+                        <button
+                            type="button"
+                            data-action="schedule-followup"
+                            data-professor-id="${professor.id}"
+                            data-days="3"
+                            class="quick-followup-btn"
+                        >
+                            +3 天
+                        </button>
+                        <button
+                            type="button"
+                            data-action="schedule-followup"
+                            data-professor-id="${professor.id}"
+                            data-days="7"
+                            class="quick-followup-btn"
+                        >
+                            +7 天
+                        </button>
+                    </div>
+                    <div class="followup-custom">
+                        <label class="followup-label">自定义时间</label>
+                        <input
+                            type="datetime-local"
+                            class="followup-input"
+                            value="${nextFollowupISO}"
+                            data-professor-id="${professor.id}"
+                            data-action="custom-followup"
+                        >
+                        <button
+                            type="button"
+                            class="followup-save-btn"
+                            data-action="apply-custom-followup"
+                            data-professor-id="${professor.id}"
+                        >
+                            保存
+                        </button>
+                    </div>
                 </div>
             </div>
         `

@@ -124,7 +124,7 @@ class SupabaseSync:
             True 需要更新，False 无需更新
         """
         # 检查关键字段是否有变化
-        fields_to_check = ['email', 'phone', 'title', 'research_areas']
+        fields_to_check = ['title', 'research_areas', 'homepage', 'office_location']
 
         for field in fields_to_check:
             if field in new_data:
@@ -138,8 +138,6 @@ class SupabaseSync:
         insert_data = {
             'university_id': university_id,
             'name': prof['name'],
-            'email': prof.get('email'),
-            'phone': prof.get('phone'),
             'title': prof.get('title'),
             'research_areas': prof.get('research_areas', []),
             'homepage': prof.get('homepage'),
@@ -157,8 +155,6 @@ class SupabaseSync:
     def _update_professor(self, professor_id: str, prof: Dict[str, Any]):
         """更新现有导师"""
         update_data = {
-            'email': prof.get('email'),
-            'phone': prof.get('phone'),
             'title': prof.get('title'),
             'research_areas': prof.get('research_areas', []),
             'homepage': prof.get('homepage'),

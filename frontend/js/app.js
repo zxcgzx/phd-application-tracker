@@ -721,7 +721,7 @@ async function changeProfessorStatus(professorId, status) {
     return updateApplicationStatus(professorId, status)
 }
 
-async function scheduleQuickFollowup(professorId, days = 3) {
+async function scheduleQuickFollowup(professorId, days = 3, options = {}) {
     if (!professorId) {
         return false
     }
@@ -733,12 +733,23 @@ async function scheduleQuickFollowup(professorId, days = 3) {
     }
 
     try {
-        const sanitizedDays = Number.isFinite(days) && days > 0 ? Math.round(days) : 3
-        const target = new Date()
-        target.setDate(target.getDate() + sanitizedDays)
+        let targetDate = null
+
+        if (options.targetISO) {
+            const customDate = new Date(options.targetISO)
+            if (Number.isNaN(customDate.getTime())) {
+                showToast('无效的日期格式', 'error')
+                return false
+            }
+            targetDate = customDate
+        } else {
+            const sanitizedDays = Number.isFinite(days) && days > 0 ? Math.round(days) : 3
+            targetDate = new Date()
+            targetDate.setDate(targetDate.getDate() + sanitizedDays)
+        }
 
         const payload = {
-            next_followup_at: target.toISOString(),
+            next_followup_at: targetDate.toISOString(),
             updated_at: new Date().toISOString()
         }
 
@@ -752,7 +763,7 @@ async function scheduleQuickFollowup(professorId, days = 3) {
         if (error) throw error
 
         upsertApplication(professorId, data)
-        showToast(`已设置 ${sanitizedDays} 天后的跟进提醒`)
+        showToast('已更新跟进提醒')
         refreshProfessorsView()
         return true
 
