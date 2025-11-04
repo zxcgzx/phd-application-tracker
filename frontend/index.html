@@ -87,7 +87,7 @@
                             class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
                         >
                     </div>
-                    <div class="flex gap-2 flex-wrap">
+                    <div class="flex gap-2 flex-wrap items-center">
                         <select id="filter-university" class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary">
                             <option value="">所有学校</option>
                         </select>
@@ -107,6 +107,9 @@
                         </select>
                         <button id="batch-mode-btn" class="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200">
                             批量操作
+                        </button>
+                        <button id="create-professor-btn" class="px-4 py-2 bg-primary text-white rounded-lg hover:bg-blue-600">
+                            新建导师
                         </button>
                     </div>
                 </div>
@@ -162,6 +165,115 @@
         <div class="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
             <div class="p-6" id="modal-content">
                 <!-- 内容将通过 JavaScript 动态插入 -->
+            </div>
+        </div>
+    </div>
+
+    <!-- 新建导师弹窗 -->
+    <div id="create-professor-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <div class="p-6">
+                <div class="flex items-center justify-between mb-4">
+                    <h2 class="text-xl font-semibold text-gray-800">新建导师</h2>
+                    <button id="create-professor-close" class="text-gray-400 hover:text-gray-600 text-2xl leading-none">
+                        ×
+                    </button>
+                </div>
+                <form id="create-professor-form" class="space-y-4">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label for="create-professor-name" class="block text-sm font-medium text-gray-700 mb-1">姓名 *</label>
+                            <input
+                                type="text"
+                                id="create-professor-name"
+                                name="name"
+                                required
+                                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary"
+                                placeholder="请输入导师姓名"
+                            >
+                        </div>
+                        <div>
+                            <label for="create-professor-title" class="block text-sm font-medium text-gray-700 mb-1">职称</label>
+                            <input
+                                type="text"
+                                id="create-professor-title"
+                                name="title"
+                                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary"
+                                placeholder="教授/副教授..."
+                            >
+                        </div>
+                        <div class="md:col-span-2">
+                            <label for="create-professor-university" class="block text-sm font-medium text-gray-700 mb-1">所属学校 *</label>
+                            <select
+                                id="create-professor-university"
+                                name="university_id"
+                                required
+                                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary"
+                            >
+                                <option value="">请选择学校</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label for="create-professor-email" class="block text-sm font-medium text-gray-700 mb-1">邮箱</label>
+                            <input
+                                type="email"
+                                id="create-professor-email"
+                                name="email"
+                                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary"
+                                placeholder="name@example.com"
+                            >
+                        </div>
+                        <div>
+                            <label for="create-professor-phone" class="block text-sm font-medium text-gray-700 mb-1">电话</label>
+                            <input
+                                type="text"
+                                id="create-professor-phone"
+                                name="phone"
+                                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary"
+                                placeholder="可选"
+                            >
+                        </div>
+                        <div>
+                            <label for="create-professor-homepage" class="block text-sm font-medium text-gray-700 mb-1">个人主页</label>
+                            <input
+                                type="url"
+                                id="create-professor-homepage"
+                                name="homepage"
+                                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary"
+                                placeholder="https://..."
+                            >
+                        </div>
+                        <div>
+                            <label for="create-professor-office" class="block text-sm font-medium text-gray-700 mb-1">办公室</label>
+                            <input
+                                type="text"
+                                id="create-professor-office"
+                                name="office_location"
+                                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary"
+                                placeholder="教学楼/房间号"
+                            >
+                        </div>
+                    </div>
+                    <div>
+                        <label for="create-professor-research" class="block text-sm font-medium text-gray-700 mb-1">研究方向</label>
+                        <textarea
+                            id="create-professor-research"
+                            name="research_areas"
+                            rows="3"
+                            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary"
+                            placeholder="使用逗号或空格分隔多个方向，例如：人工智能，自主控制，机器人"
+                        ></textarea>
+                        <p class="mt-1 text-xs text-gray-500">如果已有标签可直接粘贴，多余空格会自动清理。</p>
+                    </div>
+                    <div class="flex items-center justify-end gap-3 pt-2">
+                        <button type="button" id="create-professor-cancel" class="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300">
+                            取消
+                        </button>
+                        <button type="submit" class="px-4 py-2 bg-primary text-white rounded-lg hover:bg-blue-600">
+                            保存
+                        </button>
+                    </div>
+                </form>
             </div>
         </div>
     </div>

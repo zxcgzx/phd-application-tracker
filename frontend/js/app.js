@@ -3,49 +3,300 @@
  */
 
 import { supabase, checkConfig } from './supabase-config.js'
-import { renderProfessorCard, openProfessorModal } from './components/professor-list.js'
+import { openProfessorModal } from './components/professor-list.js'
 import { renderStatsPanel } from './components/stats-dashboard.js'
 import { renderCrawlerPanel } from './components/crawler-manager.js'
 import { renderTemplatesPanel } from './components/email-templates.js'
+import { showToast, showLoading } from './core/feedback.js'
+import {
+    state,
+    setCurrentTab,
+    setCurrentUser,
+    setProfessors,
+    setUniversities,
+    setApplications,
+    upsertApplication,
+    removeApplication,
+    updateFilters,
+    toggleBatchMode as toggleBatchModeState,
+    clearBatchSelection,
+    selectProfessor,
+    deselectProfessor,
+    setDisplayLimit,
+    increaseDisplayLimit
+} from './core/store.js'
+import {
+    renderProfessorsList,
+    bindProfessorCardEvents,
+    updateBatchSelectionView,
+    closeModal
+} from './features/professors/view.js'
 
-// 全局状态
-const state = {
-    currentTab: 'professors',
-    professors: [],
-    applications: new Map(),
-    universities: new Map(),
-    currentUser: '你', // 或 '女朋友'
-    filters: {
-        university: '',
-        status: '',
-        sentBy: '',
-        search: ''
-    },
-    batchMode: false,
-    selectedProfessors: new Set()
+const DEFAULT_PAGE_SIZE = 24
+const STATUS_NEEDS_SENT_AT = new Set(['已发送', '已读', '已回复', '待面试', '已接受', '已拒绝'])
+const STATUS_NEEDS_REPLIED_AT = new Set(['已回复'])
+const FILTER_STORAGE_KEY = 'phd_tracker_filters_v1'
+const CREATE_PROFESSOR_MODAL_ID = 'create-professor-modal'
+let filterPersistTimer = null
+
+function scheduleFiltersPersist() {
+    if (filterPersistTimer) {
+        clearTimeout(filterPersistTimer)
+    }
+    filterPersistTimer = setTimeout(() => {
+        saveFiltersToStorage()
+        filterPersistTimer = null
+    }, 200)
 }
 
-// 工具函数
-export function showToast(message, type = 'success') {
-    const toast = document.createElement('div')
-    toast.className = `toast toast-${type}`
-    toast.textContent = message
-
-    document.body.appendChild(toast)
-
-    setTimeout(() => {
-        toast.style.opacity = '0'
-        setTimeout(() => toast.remove(), 300)
-    }, 3000)
+function saveFiltersToStorage() {
+    if (typeof localStorage === 'undefined') {
+        return
+    }
+    try {
+        const payload = {
+            search: state.filters.search || '',
+            university: state.filters.university || '',
+            status: state.filters.status || '',
+            sentBy: state.filters.sentBy || ''
+        }
+        localStorage.setItem(FILTER_STORAGE_KEY, JSON.stringify(payload))
+    } catch (error) {
+        console.warn('保存筛选条件失败:', error)
+    }
 }
 
-export function showLoading(container, message = '加载中...') {
-    container.innerHTML = `
-        <div class="col-span-full text-center py-12">
-            <div class="loading mx-auto mb-4"></div>
-            <p class="text-gray-500">${message}</p>
-        </div>
-    `
+function restoreFiltersFromStorage() {
+    if (typeof localStorage === 'undefined') {
+        return
+    }
+    try {
+        const raw = localStorage.getItem(FILTER_STORAGE_KEY)
+        if (!raw) return
+        const parsed = JSON.parse(raw)
+        if (parsed && typeof parsed === 'object') {
+            updateFilters({
+                search: parsed.search || '',
+                university: parsed.university || '',
+                status: parsed.status || '',
+                sentBy: parsed.sentBy || ''
+            })
+        }
+    } catch (error) {
+        console.warn('恢复筛选条件失败:', error)
+    }
+}
+
+function syncFilterControlsFromState() {
+    const searchInput = document.getElementById('search-input')
+    if (searchInput) {
+        searchInput.value = state.filters.search || ''
+    }
+
+    const uniSelect = document.getElementById('filter-university')
+    if (uniSelect) {
+        uniSelect.value = state.filters.university || ''
+    }
+
+    const statusSelect = document.getElementById('filter-status')
+    if (statusSelect) {
+        statusSelect.value = state.filters.status || ''
+    }
+
+    const sentBySelect = document.getElementById('filter-sent-by')
+    if (sentBySelect) {
+        sentBySelect.value = state.filters.sentBy || ''
+    }
+}
+
+function parseResearchAreas(value = '') {
+    return value
+        .split(/[,，;；\s]+/)
+        .map(item => item.trim())
+        .filter(Boolean)
+}
+
+function populateCreateProfessorUniversities() {
+    const select = document.getElementById('create-professor-university')
+    if (!select) return
+
+    const currentValue = select.value
+    select.innerHTML = '<option value="">请选择学校</option>'
+
+    state.universities.forEach((uni, id) => {
+        if (!uni) return
+        const option = document.createElement('option')
+        option.value = id
+        option.textContent = uni.name || '未命名学校'
+        select.appendChild(option)
+    })
+
+    if (state.filters.university && state.universities.has(state.filters.university)) {
+        select.value = state.filters.university
+    } else if (currentValue && state.universities.has(currentValue)) {
+        select.value = currentValue
+    }
+}
+
+function resetCreateProfessorForm() {
+    const form = document.getElementById('create-professor-form')
+    if (!form) return
+    form.reset()
+    form.dataset.submitting = 'false'
+}
+
+function openCreateProfessorModal() {
+    if (state.universities.size === 0) {
+        showToast('请先在 Supabase 中配置学校信息', 'error')
+        return
+    }
+
+    resetCreateProfessorForm()
+    populateCreateProfessorUniversities()
+
+    const modal = document.getElementById(CREATE_PROFESSOR_MODAL_ID)
+    if (modal) {
+        modal.classList.remove('hidden')
+    }
+}
+
+function closeCreateProfessorModal() {
+    const modal = document.getElementById(CREATE_PROFESSOR_MODAL_ID)
+    if (modal) {
+        modal.classList.add('hidden')
+    }
+}
+
+async function handleCreateProfessorSubmit(event) {
+    event.preventDefault()
+    const form = event.target
+    if (!form || form.dataset.submitting === 'true') {
+        return
+    }
+
+    const submitBtn = form.querySelector('button[type="submit"]')
+    const originalText = submitBtn?.textContent
+
+    form.dataset.submitting = 'true'
+    if (submitBtn) {
+        submitBtn.disabled = true
+        submitBtn.classList.add('is-loading')
+        submitBtn.textContent = '保存中...'
+    }
+
+    const formData = new FormData(form)
+    const name = (formData.get('name') || '').trim()
+    const universityId = (formData.get('university_id') || '').trim()
+
+    if (!name) {
+        showToast('导师姓名不能为空', 'error')
+        form.dataset.submitting = 'false'
+        if (submitBtn) {
+            submitBtn.disabled = false
+            submitBtn.classList.remove('is-loading')
+            submitBtn.textContent = originalText || '保存'
+        }
+        return
+    }
+
+    if (!universityId) {
+        showToast('请选择导师所属学校', 'error')
+        form.dataset.submitting = 'false'
+        if (submitBtn) {
+            submitBtn.disabled = false
+            submitBtn.classList.remove('is-loading')
+            submitBtn.textContent = originalText || '保存'
+        }
+        return
+    }
+
+    const payload = {
+        name,
+        university_id: universityId,
+        title: (formData.get('title') || '').trim() || null,
+        email: (formData.get('email') || '').trim() || null,
+        phone: (formData.get('phone') || '').trim() || null,
+        homepage: (formData.get('homepage') || '').trim() || null,
+        office_location: (formData.get('office_location') || '').trim() || null,
+        research_areas: null
+    }
+
+    const researchInput = (formData.get('research_areas') || '').trim()
+    const researchAreas = parseResearchAreas(researchInput)
+    if (researchAreas.length > 0) {
+        payload.research_areas = researchAreas
+    }
+
+    try {
+        const { data, error } = await supabase
+            .from('professors')
+            .insert(payload)
+            .select(`
+                *,
+                universities(name),
+                applications(*)
+            `)
+            .single()
+
+        if (error) throw error
+
+        const nextProfessors = [data, ...state.professors.filter(p => p.id !== data.id)]
+        setProfessors(nextProfessors)
+        removeApplication(data.id)
+
+        showToast(`已创建导师 ${data.name}`)
+        closeCreateProfessorModal()
+        refreshProfessorsView()
+
+    } catch (error) {
+        console.error('创建导师失败:', error)
+        showToast('创建导师失败: ' + error.message, 'error')
+    } finally {
+        form.dataset.submitting = 'false'
+        if (submitBtn) {
+            submitBtn.disabled = false
+            submitBtn.classList.remove('is-loading')
+            submitBtn.textContent = originalText || '保存'
+        }
+    }
+}
+
+async function deleteProfessor(professorId) {
+    if (!professorId) return false
+
+    const professor = state.professors.find(p => p.id === professorId)
+    if (!professor) {
+        showToast('未找到对应导师', 'error')
+        return false
+    }
+
+    const confirmed = window.confirm(`确认删除 ${professor.name} 吗？此操作不可恢复。`)
+    if (!confirmed) {
+        return false
+    }
+
+    try {
+        const { error } = await supabase
+            .from('professors')
+            .delete()
+            .eq('id', professorId)
+
+        if (error) throw error
+
+        const next = state.professors.filter(p => p.id !== professorId)
+        setProfessors(next)
+        removeApplication(professorId)
+        deselectProfessor(professorId)
+
+        showToast(`已删除 ${professor.name}`, 'info')
+        refreshProfessorsView()
+        return true
+
+    } catch (error) {
+        console.error('删除导师失败:', error)
+        showToast('删除导师失败: ' + error.message, 'error')
+        return false
+    }
 }
 
 // 初始化
@@ -76,6 +327,9 @@ async function init() {
 
     // 绑定事件
     bindEvents()
+    syncBatchModeUI()
+    restoreFiltersFromStorage()
+    syncFilterControlsFromState()
 
     // 加载数据
     await loadData()
@@ -98,31 +352,76 @@ function bindEvents() {
 
     // 搜索
     document.getElementById('search-input').addEventListener('input', (e) => {
-        state.filters.search = e.target.value
+        updateFilters({ search: e.target.value })
+        setDisplayLimit(DEFAULT_PAGE_SIZE)
+        scheduleFiltersPersist()
         applyFilters()
     })
 
     // 筛选器
     document.getElementById('filter-university').addEventListener('change', (e) => {
-        state.filters.university = e.target.value
+        updateFilters({ university: e.target.value })
+        setDisplayLimit(DEFAULT_PAGE_SIZE)
+        scheduleFiltersPersist()
         applyFilters()
     })
 
     document.getElementById('filter-status').addEventListener('change', (e) => {
-        state.filters.status = e.target.value
+        updateFilters({ status: e.target.value })
+        setDisplayLimit(DEFAULT_PAGE_SIZE)
+        scheduleFiltersPersist()
         applyFilters()
     })
 
     document.getElementById('filter-sent-by').addEventListener('change', (e) => {
-        state.filters.sentBy = e.target.value
+        updateFilters({ sentBy: e.target.value })
+        setDisplayLimit(DEFAULT_PAGE_SIZE)
+        scheduleFiltersPersist()
         applyFilters()
     })
 
     // 批量操作
-    document.getElementById('batch-mode-btn').addEventListener('click', toggleBatchMode)
-    document.getElementById('batch-cancel').addEventListener('click', toggleBatchMode)
+    document.getElementById('batch-mode-btn').addEventListener('click', handleBatchModeToggle)
+    document.getElementById('batch-cancel').addEventListener('click', () => handleBatchModeToggle({ force: false }))
     document.getElementById('batch-mark-sent').addEventListener('click', batchMarkAsSent)
     document.getElementById('batch-export').addEventListener('click', batchExport)
+
+    const createBtn = document.getElementById('create-professor-btn')
+    if (createBtn) {
+        createBtn.addEventListener('click', openCreateProfessorModal)
+    }
+
+    const createCancelBtn = document.getElementById('create-professor-cancel')
+    if (createCancelBtn) {
+        createCancelBtn.addEventListener('click', closeCreateProfessorModal)
+    }
+
+    const createCloseBtn = document.getElementById('create-professor-close')
+    if (createCloseBtn) {
+        createCloseBtn.addEventListener('click', closeCreateProfessorModal)
+    }
+
+    const createModal = document.getElementById(CREATE_PROFESSOR_MODAL_ID)
+    if (createModal) {
+        createModal.addEventListener('click', (event) => {
+            if (event.target.id === CREATE_PROFESSOR_MODAL_ID) {
+                closeCreateProfessorModal()
+            }
+        })
+    }
+
+    const createForm = document.getElementById('create-professor-form')
+    if (createForm) {
+        createForm.addEventListener('submit', handleCreateProfessorSubmit)
+    }
+
+    const loadMoreBtn = document.getElementById('load-more')
+    if (loadMoreBtn) {
+        loadMoreBtn.addEventListener('click', () => {
+            increaseDisplayLimit(DEFAULT_PAGE_SIZE)
+            refreshProfessorsView()
+        })
+    }
 
     // 关闭弹窗
     document.getElementById('professor-modal').addEventListener('click', (e) => {
@@ -134,7 +433,7 @@ function bindEvents() {
 
 // 切换 Tab
 function switchTab(tabName) {
-    state.currentTab = tabName
+    setCurrentTab(tabName)
 
     // 更新按钮样式
     document.querySelectorAll('.tab-btn').forEach(btn => {
@@ -165,6 +464,7 @@ function switchTab(tabName) {
 async function loadData() {
     try {
         showLoading(document.getElementById('professors-grid'))
+        setDisplayLimit(DEFAULT_PAGE_SIZE)
 
         // 加载学校
         const { data: universities } = await supabase
@@ -172,9 +472,7 @@ async function loadData() {
             .select('*')
             .order('name')
 
-        universities?.forEach(uni => {
-            state.universities.set(uni.id, uni)
-        })
+        setUniversities(universities || [])
 
         // 更新学校筛选器
         const uniSelect = document.getElementById('filter-university')
@@ -182,6 +480,12 @@ async function loadData() {
         universities?.forEach(uni => {
             uniSelect.innerHTML += `<option value="${uni.id}">${uni.name}</option>`
         })
+
+        if (state.filters.university && !state.universities.has(state.filters.university)) {
+            updateFilters({ university: '' })
+            scheduleFiltersPersist()
+        }
+        uniSelect.value = state.filters.university || ''
 
         // 加载导师和申请记录
         const { data: professors } = await supabase
@@ -194,16 +498,18 @@ async function loadData() {
             .eq('is_active', true)
             .order('created_at', { ascending: false })
 
-        state.professors = professors || []
+        setProfessors(professors || [])
 
-        // 构建申请记录映射
+        const applicationsMap = new Map()
         professors?.forEach(prof => {
             if (prof.applications && prof.applications.length > 0) {
-                state.applications.set(prof.id, prof.applications[0])
+                applicationsMap.set(prof.id, prof.applications[0])
             }
         })
+        setApplications(applicationsMap)
 
-        renderProfessorsList()
+        syncFilterControlsFromState()
+        refreshProfessorsView()
 
     } catch (error) {
         console.error('加载数据失败:', error)
@@ -211,155 +517,146 @@ async function loadData() {
     }
 }
 
-// 渲染导师列表
-function renderProfessorsList() {
-    const container = document.getElementById('professors-grid')
-    const filtered = getFilteredProfessors()
-
-    if (filtered.length === 0) {
-        container.innerHTML = `
-            <div class="col-span-full text-center py-12 text-gray-400">
-                <p class="text-lg mb-2">😕 没有找到导师</p>
-                <p class="text-sm">请尝试调整筛选条件或添加新的学校</p>
-            </div>
-        `
-        return
-    }
-
-    container.innerHTML = filtered.map(prof => {
-        const application = state.applications.get(prof.id)
-        return renderProfessorCard(prof, application, state)
-    }).join('')
-
-    // 绑定卡片事件
-    bindCardEvents()
+function refreshProfessorsView() {
+    const { filtered, visibleCount } = renderProfessorsList(state, { limit: state.displayLimit })
+    bindProfessorCardEvents(state, {
+        onViewDetail: (professor, application) => openProfessorModal(professor, application, state),
+        onMarkSent: markAsSent,
+        onQuickStatusChange: changeProfessorStatus,
+        onDeleteProfessor: deleteProfessor,
+        onSelectionChange: (professorId, checked) => {
+            if (!professorId) return
+            if (checked) {
+                selectProfessor(professorId)
+            } else {
+                deselectProfessor(professorId)
+            }
+            updateBatchSelectionView(state)
+        }
+    })
+    updateBatchSelectionView(state)
+    updateLoadMoreButton(filtered.length, visibleCount)
 }
 
-// 获取筛选后的导师列表
-function getFilteredProfessors() {
-    return state.professors.filter(prof => {
-        const application = state.applications.get(prof.id)
+function updateLoadMoreButton(totalCount, visibleCount) {
+    const button = document.getElementById('load-more')
+    if (!button) return
 
-        // 学校筛选
-        if (state.filters.university && prof.university_id !== state.filters.university) {
-            return false
-        }
-
-        // 状态筛选
-        if (state.filters.status) {
-            const status = application?.status || '待发送'
-            if (status !== state.filters.status) {
-                return false
-            }
-        }
-
-        // 操作人筛选
-        if (state.filters.sentBy && application?.sent_by !== state.filters.sentBy) {
-            return false
-        }
-
-        // 搜索筛选
-        if (state.filters.search) {
-            const keyword = state.filters.search.toLowerCase()
-            const searchText = [
-                prof.name,
-                prof.title,
-                ...(prof.research_areas || [])
-            ].join(' ').toLowerCase()
-
-            if (!searchText.includes(keyword)) {
-                return false
-            }
-        }
-
-        return true
-    })
+    const remaining = totalCount - visibleCount
+    if (remaining > 0) {
+        button.classList.remove('hidden')
+        button.disabled = false
+        button.textContent = `加载更多 (剩余 ${remaining})`
+    } else {
+        button.classList.add('hidden')
+    }
 }
 
 // 应用筛选
 function applyFilters() {
-    renderProfessorsList()
+    refreshProfessorsView()
 }
 
-// 绑定卡片事件
-function bindCardEvents() {
-    // 查看详情
-    document.querySelectorAll('[data-action="view-detail"]').forEach(btn => {
-        btn.addEventListener('click', () => {
-            const profId = btn.dataset.professorId
-            const prof = state.professors.find(p => p.id === profId)
-            const app = state.applications.get(profId)
-            openProfessorModal(prof, app, state)
-        })
-    })
+// 更新申请状态的通用方法，确保批量操作与快捷操作可复用
+async function updateApplicationStatus(professorId, status, options = {}) {
+    const { silent = false } = options
 
-    // 快速标记状态
-    document.querySelectorAll('[data-action="mark-sent"]').forEach(btn => {
-        btn.addEventListener('click', async () => {
-            const profId = btn.dataset.professorId
-            await markAsSent(profId)
-        })
-    })
+    try {
+        const professor = state.professors.find(p => p.id === professorId)
+        if (!professor) {
+            showToast('未找到对应导师', 'error')
+            return false
+        }
 
-    // 批量选择
-    if (state.batchMode) {
-        document.querySelectorAll('.batch-checkbox').forEach(checkbox => {
-            checkbox.addEventListener('change', (e) => {
-                const profId = e.target.dataset.professorId
-                if (e.target.checked) {
-                    state.selectedProfessors.add(profId)
-                } else {
-                    state.selectedProfessors.delete(profId)
-                }
-                updateBatchActions()
-            })
-        })
+        const existing = state.applications.get(professorId)
+        const now = new Date().toISOString()
+
+        const payload = {
+            status,
+            updated_at: now
+        }
+
+        if (status === '待发送') {
+            payload.sent_at = null
+            payload.sent_by = null
+            payload.replied_at = null
+        } else {
+            payload.sent_by = state.currentUser
+            if (STATUS_NEEDS_SENT_AT.has(status) && !existing?.sent_at) {
+                payload.sent_at = now
+            }
+            if (STATUS_NEEDS_REPLIED_AT.has(status)) {
+                payload.replied_at = now
+            }
+        }
+
+        let record = null
+
+        if (existing) {
+            const { data, error } = await supabase
+                .from('applications')
+                .update(payload)
+                .eq('id', existing.id)
+                .select()
+                .single()
+
+            if (error) throw error
+            record = data
+        } else {
+            const insertPayload = {
+                professor_id: professorId,
+                ...payload
+            }
+            insertPayload.priority = 3
+
+            if (!insertPayload.sent_at && STATUS_NEEDS_SENT_AT.has(status)) {
+                insertPayload.sent_at = now
+            }
+            if (STATUS_NEEDS_REPLIED_AT.has(status)) {
+                insertPayload.replied_at = now
+            }
+
+            const { data, error } = await supabase
+                .from('applications')
+                .insert(insertPayload)
+                .select()
+                .single()
+
+            if (error) throw error
+            record = data
+        }
+
+        if (record) {
+            upsertApplication(professorId, record)
+        }
+
+        if (!silent) {
+            const message = status === '待发送'
+                ? `已将 ${professor.name} 重置为待发送`
+                : `已更新 ${professor.name} 为"${status}"`
+            showToast(message)
+            refreshProfessorsView()
+        }
+        return true
+
+    } catch (error) {
+        console.error('更新状态失败:', error)
+        showToast('更新状态失败: ' + error.message, 'error')
+        return false
     }
 }
 
 // 标记为已发送
-async function markAsSent(professorId) {
-    try {
-        const prof = state.professors.find(p => p.id === professorId)
-        let application = state.applications.get(professorId)
+async function markAsSent(professorId, options = {}) {
+    return updateApplicationStatus(professorId, '已发送', options)
+}
 
-        if (application) {
-            // 更新现有记录
-            const { data, error } = await supabase
-                .from('applications')
-                .update({
-                    status: '已发送',
-                    sent_at: new Date().toISOString(),
-                    sent_by: state.currentUser
-                })
-                .eq('id', application.id)
-                .select()
-
-            if (error) throw error
-            state.applications.set(professorId, data[0])
-        } else {
-            // 创建新记录
-            const { data, error } = await supabase
-                .from('applications')
-                .insert({
-                    professor_id: professorId,
-                    status: '已发送',
-                    sent_at: new Date().toISOString(),
-                    sent_by: state.currentUser
-                })
-                .select()
-
-            if (error) throw error
-            state.applications.set(professorId, data[0])
-        }
-
-        showToast(`已标记 ${prof.name} 为"已发送"`)
-        renderProfessorsList()
-
-    } catch (error) {
-        console.error('标记失败:', error)
-        showToast('标记失败: ' + error.message, 'error')
+// 快速状态更新入口
+async function changeProfessorStatus(professorId, status) {
+    if (!professorId || !status) {
+        return false
     }
+    return updateApplicationStatus(professorId, status)
 }
 
 // 批量标记
@@ -367,12 +664,14 @@ async function batchMarkAsSent() {
     const count = state.selectedProfessors.size
     if (count === 0) return
 
-    for (const profId of state.selectedProfessors) {
-        await markAsSent(profId)
+    const selectedIds = Array.from(state.selectedProfessors)
+
+    for (const profId of selectedIds) {
+        await markAsSent(profId, { silent: true })
     }
 
-    state.selectedProfessors.clear()
-    toggleBatchMode()
+    clearBatchSelection()
+    handleBatchModeToggle({ force: false })
     showToast(`已批量标记 ${count} 位导师`)
 }
 
@@ -388,7 +687,23 @@ function batchExport() {
     const selectedData = state.professors.filter(p => state.selectedProfessors.has(p.id))
 
     // 转换为CSV格式
-    const headers = ['姓名', '职称', '学校', '邮箱', '电话', '研究方向', '申请状态', '发送时间', '备注']
+    const headers = [
+        '姓名',
+        '职称',
+        '学校',
+        '邮箱',
+        '电话',
+        '研究方向',
+        '申请状态',
+        '优先级',
+        '匹配度',
+        '发送时间',
+        '下次跟进',
+        '最后跟进',
+        '标签',
+        '回复摘要',
+        '备注'
+    ]
     const rows = selectedData.map(prof => {
         const app = state.applications.get(prof.id)
         return [
@@ -399,7 +714,13 @@ function batchExport() {
             prof.phone || '',
             prof.research_areas?.join('; ') || '',
             app?.status || '待发送',
+            app?.priority ?? '',
+            app?.match_score ?? '',
             app?.sent_at ? new Date(app.sent_at).toLocaleDateString('zh-CN') : '',
+            app?.next_followup_at ? new Date(app.next_followup_at).toLocaleString('zh-CN') : '',
+            app?.last_followup_at ? new Date(app.last_followup_at).toLocaleString('zh-CN') : '',
+            Array.isArray(app?.tags) ? app.tags.join('; ') : '',
+            app?.reply_summary || '',
             app?.notes || ''
         ]
     })
@@ -419,11 +740,24 @@ function batchExport() {
     showToast(`已导出 ${count} 位导师信息`)
 }
 
-// 切换批量模式
-function toggleBatchMode() {
-    state.batchMode = !state.batchMode
-    state.selectedProfessors.clear()
+function handleBatchModeToggle(options = {}) {
+    const { force } = options
 
+    if (typeof force === 'boolean') {
+        toggleBatchModeState(force)
+    } else {
+        toggleBatchModeState()
+    }
+
+    if (!state.batchMode) {
+        clearBatchSelection()
+    }
+
+    syncBatchModeUI()
+    refreshProfessorsView()
+}
+
+function syncBatchModeUI() {
     const batchActions = document.getElementById('batch-actions')
     const batchBtn = document.getElementById('batch-mode-btn')
 
@@ -437,17 +771,7 @@ function toggleBatchMode() {
         batchBtn.classList.add('bg-gray-100', 'text-gray-700')
     }
 
-    renderProfessorsList()
-}
-
-// 更新批量操作栏
-function updateBatchActions() {
-    document.getElementById('selected-count').textContent = state.selectedProfessors.size
-}
-
-// 关闭弹窗
-function closeModal() {
-    document.getElementById('professor-modal').classList.add('hidden')
+    updateBatchSelectionView(state)
 }
 
 window.closeModal = closeModal
@@ -463,8 +787,8 @@ function setupRealtimeSubscription() {
                 console.log('实时更新 (applications):', payload)
 
                 if (payload.eventType === 'INSERT' || payload.eventType === 'UPDATE') {
-                    state.applications.set(payload.new.professor_id, payload.new)
-                    renderProfessorsList()
+                    upsertApplication(payload.new.professor_id, payload.new)
+                    refreshProfessorsView()
 
                     // 显示通知
                     const operator = payload.new.sent_by
@@ -472,8 +796,8 @@ function setupRealtimeSubscription() {
                         showToast(`${operator} 刚刚更新了申请记录`, 'info')
                     }
                 } else if (payload.eventType === 'DELETE') {
-                    state.applications.delete(payload.old.professor_id)
-                    renderProfessorsList()
+                    removeApplication(payload.old.professor_id)
+                    refreshProfessorsView()
                 }
             }
         )
@@ -493,14 +817,17 @@ function setupRealtimeSubscription() {
                     showToast('发现新导师，列表已更新', 'info')
                 } else if (payload.eventType === 'DELETE') {
                     // 从列表中移除
-                    state.professors = state.professors.filter(p => p.id !== payload.old.id)
-                    renderProfessorsList()
+                    const next = state.professors.filter(p => p.id !== payload.old.id)
+                    setProfessors(next)
+                    refreshProfessorsView()
                 } else if (payload.eventType === 'UPDATE') {
                     // 更新现有导师信息
                     const index = state.professors.findIndex(p => p.id === payload.new.id)
                     if (index >= 0) {
-                        state.professors[index] = { ...state.professors[index], ...payload.new }
-                        renderProfessorsList()
+                        const updated = [...state.professors]
+                        updated[index] = { ...updated[index], ...payload.new }
+                        setProfessors(updated)
+                        refreshProfessorsView()
                     }
                 }
             }
@@ -514,7 +841,7 @@ function setupRealtimeSubscription() {
 function updateCurrentUser() {
     // 可以从 localStorage 读取
     const savedUser = localStorage.getItem('currentUser') || '你'
-    state.currentUser = savedUser
+    setCurrentUser(savedUser)
 
     const userSpan = document.getElementById('current-user')
     userSpan.innerHTML = `
@@ -526,9 +853,10 @@ function updateCurrentUser() {
     `
 
     document.getElementById('user-selector').addEventListener('change', (e) => {
-        state.currentUser = e.target.value
-        localStorage.setItem('currentUser', e.target.value)
-        showToast(`已切换到 ${e.target.value}`)
+        const nextUser = e.target.value
+        setCurrentUser(nextUser)
+        localStorage.setItem('currentUser', nextUser)
+        showToast(`已切换到 ${nextUser}`)
     })
 }
 
@@ -542,10 +870,8 @@ window.viewProfessorFromTodo = function(professorId) {
 }
 
 // 导出全局函数供组件使用
-window.appState = state
 window.markAsSent = markAsSent
-window.showToast = showToast
-window.renderProfessorsList = renderProfessorsList
+window.renderProfessorsList = refreshProfessorsView
 
 // 启动应用
 document.addEventListener('DOMContentLoaded', init)

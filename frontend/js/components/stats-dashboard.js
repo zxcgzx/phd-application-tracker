@@ -117,8 +117,34 @@ function calculateStats(state) {
                 stats.todos.push({
                     type: 'follow-up',
                     message: `${prof.name} 已发送 ${daysSinceSent} 天未回复`,
-                    professorId: prof.id
+                    professorId: prof.id,
+                    severity: daysSinceSent >= 14 ? 'danger' : 'warning'
                 })
+            }
+        }
+
+        if (app?.next_followup_at) {
+            const nextFollowupDate = new Date(app.next_followup_at)
+            if (!Number.isNaN(nextFollowupDate.getTime())) {
+                const diffMs = nextFollowupDate.getTime() - Date.now()
+                const dueText = nextFollowupDate.toLocaleString('zh-CN', { hour12: false })
+                if (diffMs <= 0) {
+                    const overdueHours = Math.abs(Math.round(diffMs / (1000 * 60 * 60)))
+                    stats.todos.push({
+                        type: 'follow-up-due',
+                        message: `${prof.name} 的跟进已逾期 ${overdueHours} 小时，计划时间 ${dueText}`,
+                        professorId: prof.id,
+                        severity: 'danger'
+                    })
+                } else if (diffMs <= 48 * 60 * 60 * 1000) {
+                    const remainingHours = Math.max(1, Math.round(diffMs / (1000 * 60 * 60)))
+                    stats.todos.push({
+                        type: 'follow-up-soon',
+                        message: `${prof.name} 还有 ${remainingHours} 小时到预定跟进时间 (${dueText})`,
+                        professorId: prof.id,
+                        severity: 'warning'
+                    })
+                }
             }
         }
     })
@@ -182,9 +208,17 @@ function renderTodos(todos) {
         return '<p class="text-green-600 text-sm">✅ 太棒了！暂无待办事项</p>'
     }
 
+    const severityStyles = {
+        danger: { icon: '⛔', bg: 'bg-red-50', iconClass: 'text-red-600' },
+        warning: { icon: '⚠️', bg: 'bg-yellow-50', iconClass: 'text-yellow-600' },
+        info: { icon: '🔔', bg: 'bg-blue-50', iconClass: 'text-blue-600' }
+    }
+
     return todos.map(todo => `
-        <div class="flex items-center gap-3 p-3 bg-yellow-50 rounded-lg">
-            <span class="text-yellow-600">⚠️</span>
+        <div class="flex items-center gap-3 p-3 ${(severityStyles[todo.severity]?.bg) || 'bg-yellow-50'} rounded-lg">
+            <span class="${(severityStyles[todo.severity]?.iconClass) || 'text-yellow-600'}">
+                ${(severityStyles[todo.severity]?.icon) || '⚠️'}
+            </span>
             <span class="flex-1 text-sm text-gray-700">${todo.message}</span>
             <button
                 onclick="viewProfessorFromTodo('${todo.professorId}')"

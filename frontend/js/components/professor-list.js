@@ -2,18 +2,50 @@
  * 导师列表组件
  */
 
+import { showToast } from '../core/feedback.js'
+import { upsertApplication } from '../core/store.js'
+
+const QUICK_STATUS_SEQUENCE = ['待发送', '已发送', '已读', '已回复', '待面试', '已接受', '已拒绝']
+const HTML_ESCAPE_MAP = {
+    '&': '&amp;',
+    '<': '&lt;',
+    '>': '&gt;',
+    '"': '&quot;',
+    "'": '&#39;'
+}
+
+function escapeHtml(value = '') {
+    return String(value).replace(/[&<>"']/g, char => HTML_ESCAPE_MAP[char] || char)
+}
+
+function formatDateTimeLocal(value) {
+    if (!value) return ''
+    const date = new Date(value)
+    if (Number.isNaN(date.getTime())) return ''
+    const offset = date.getTimezoneOffset()
+    const local = new Date(date.getTime() - offset * 60000)
+    return local.toISOString().slice(0, 16)
+}
+
 // 渲染导师卡片
 export function renderProfessorCard(professor, application, state) {
     const status = application?.status || '待发送'
     const priority = application?.priority || 3
     const matchScore = application?.match_score || 0
     const sentBy = application?.sent_by || ''
+    const nextFollowup = application?.next_followup_at
+        ? new Date(application.next_followup_at).toLocaleString('zh-CN', { hour12: false })
+        : null
+    const tags = Array.isArray(application?.tags)
+        ? application.tags.filter(Boolean).slice(0, 3)
+        : []
+    const replySummary = application?.reply_summary ? escapeHtml(application.reply_summary) : ''
     const uniName = professor.universities?.name || '未知学校'
 
     // 研究方向标签
     const researchTags = (professor.research_areas || [])
         .slice(0, 3)
-        .map(area => `<span class="research-tag">${area}</span>`)
+        .map(area => `<span class="research-tag">${escapeHtml(area)}</span>`)
         .join('')
 
     // 优先级星星
@@ -21,10 +53,86 @@ export function renderProfessorCard(professor, application, state) {
         const filled = i < priority
         return `<span class="priority-star ${filled ? '' : 'empty'}">★</span>`
     }).join('')
+    const priorityTitle = `优先级: ${priority} 星`
+
+    const tagChips = tags.length > 0
+        ? `
+            <div class="mt-3">
+                <p class="text-xs text-gray-500 mb-1">🏷️ 标签:</p>
+                <div class="flex flex-wrap gap-2">
+                    ${tags.map(tag => `<span class="tag-chip">${escapeHtml(tag)}</span>`).join('')}
+                </div>
+            </div>
+        `
+        : ''
 
     // 批量选择复选框
     const batchCheckbox = state.batchMode
-        ? `<input type="checkbox" class="batch-checkbox absolute top-3 left-3 w-5 h-5" data-professor-id="${professor.id}">`
+        ? `<input type="checkbox" class="batch-checkbox absolute top-3 left-3 w-5 h-5" data-professor-id="${professor.id}" ${state.selectedProfessors.has(professor.id) ? 'checked' : ''}>`
+        : ''
+
+    const quickStatusButtons = QUICK_STATUS_SEQUENCE.map(option => `
+        <button
+            type="button"
+            data-action="quick-status"
+            data-professor-id="${professor.id}"
+            data-status="${option}"
+            class="quick-status-btn ${option === status ? 'is-active' : ''}"
+        >
+            ${option}
+        </button>
+    `).join('')
+
+    const quickActions = []
+    if (professor.email) {
+        quickActions.push(`
+            <button
+                type="button"
+                data-action="copy-field"
+                data-label="邮箱"
+                data-value="${escapeHtml(professor.email)}"
+                class="quick-action-btn"
+            >
+                复制邮箱
+            </button>
+        `)
+    }
+    if (professor.phone) {
+        quickActions.push(`
+            <button
+                type="button"
+                data-action="copy-field"
+                data-label="电话"
+                data-value="${escapeHtml(professor.phone)}"
+                class="quick-action-btn"
+            >
+                复制电话
+            </button>
+        `)
+    }
+    if (professor.homepage) {
+        const homepage = escapeHtml(professor.homepage)
+        quickActions.push(`
+            <a
+                href="${homepage}"
+                target="_blank"
+                rel="noopener"
+                class="quick-action-btn quick-action-link"
+            >
+                打开主页 ↗
+            </a>
+        `)
+    }
+
+    const quickActionSection = quickActions.length > 0
+        ? `
+            <div class="quick-action-group mt-3">
+                <p class="text-xs text-gray-500 mb-1">快捷操作</p>
+                <div class="flex flex-wrap gap-2">
+                    ${quickActions.join('')}
+                </div>
+            </div>
+        `
         : ''
 
     return `
@@ -37,7 +145,12 @@ export function renderProfessorCard(professor, application, state) {
                     <h3 class="text-lg font-semibold text-gray-800">${professor.name}</h3>
                     <p class="text-sm text-gray-500">${professor.title || '未知职称'}</p>
                 </div>
-                <span class="status-badge status-${status}">${status}</span>
+                <div class="flex flex-col items-end gap-2">
+                    <span class="status-badge status-${status}">${status}</span>
+                    <div class="priority-stars text-sm" title="${priorityTitle}">
+                        ${stars}
+                    </div>
+                </div>
             </div>
 
             <!-- 学校 -->
@@ -70,11 +183,26 @@ export function renderProfessorCard(professor, application, state) {
                     ${application.sent_at ? `
                         <p class="mt-1">⏰ ${new Date(application.sent_at).toLocaleDateString('zh-CN')}</p>
                     ` : ''}
+                    ${nextFollowup ? `
+                        <p class="mt-1 text-indigo-600 font-medium">🔔 下次跟进: ${nextFollowup}</p>
+                    ` : ''}
+                    ${replySummary ? `
+                        <p class="mt-2 text-gray-600 leading-relaxed">💬 ${replySummary}</p>
+                    ` : ''}
                 </div>
             ` : ''}
 
+            <div class="quick-status-group mt-4">
+                <p class="text-xs text-gray-500 mb-1">状态快选</p>
+                <div class="flex flex-wrap gap-2">
+                    ${quickStatusButtons}
+                </div>
+            </div>
+
+            ${quickActionSection}
+
             <!-- 操作按钮 -->
-            <div class="mt-4 flex gap-2">
+            <div class="mt-4 flex flex-wrap gap-2">
                 <button
                     data-action="view-detail"
                     data-professor-id="${professor.id}"
@@ -91,7 +219,16 @@ export function renderProfessorCard(professor, application, state) {
                         标记已发送
                     </button>
                 ` : ''}
+                <button
+                    data-action="delete-professor"
+                    data-professor-id="${professor.id}"
+                    class="px-3 py-2 bg-red-100 text-red-700 text-sm rounded hover:bg-red-200 transition-colors"
+                >
+                    删除
+                </button>
             </div>
+
+            ${tagChips}
         </div>
     `
 }
@@ -103,6 +240,16 @@ export function openProfessorModal(professor, application, state) {
 
     const status = application?.status || '待发送'
     const researchAreas = (professor.research_areas || []).join('、') || '未填写'
+    const priorityValue = Number.isInteger(application?.priority) ? application.priority : 3
+    const matchScoreValue = Number.isInteger(application?.match_score) ? application.match_score : ''
+    const nextFollowupValue = formatDateTimeLocal(application?.next_followup_at)
+    const tagsValueRaw = Array.isArray(application?.tags) ? application.tags.filter(Boolean).join(', ') : ''
+    const emailSubjectRaw = application?.email_subject || ''
+    const emailBodyRaw = application?.email_body || ''
+    const replySummaryRaw = application?.reply_summary || ''
+    const lastFollowupText = application?.last_followup_at
+        ? new Date(application.last_followup_at).toLocaleString('zh-CN', { hour12: false })
+        : ''
 
     content.innerHTML = `
         <!-- 关闭按钮 -->
@@ -209,6 +356,60 @@ export function openProfessorModal(professor, application, state) {
                         </select>
                     </div>
 
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">优先级</label>
+                            <select id="update-priority" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                                ${[1, 2, 3, 4, 5].map(level => `
+                                    <option value="${level}" ${priorityValue === level ? 'selected' : ''}>${level} 星</option>
+                                `).join('')}
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">匹配度</label>
+                            <select id="update-match-score" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                                <option value="">未设置</option>
+                                ${[1, 2, 3, 4, 5].map(score => `
+                                    <option value="${score}" ${matchScoreValue === score ? 'selected' : ''}>${score} 星</option>
+                                `).join('')}
+                            </select>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">下次跟进时间</label>
+                        <input
+                            type="datetime-local"
+                            id="update-next-followup"
+                            value="${nextFollowupValue}"
+                            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                        >
+                        ${lastFollowupText ? `
+                            <p class="text-xs text-gray-500 mt-1">上次跟进: ${lastFollowupText}</p>
+                        ` : ''}
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">标签（用逗号分隔）</label>
+                        <input
+                            type="text"
+                            id="update-tags"
+                            value="${escapeHtml(tagsValueRaw)}"
+                            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                            placeholder="例如: 重点关注, 保底"
+                        >
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">回复摘要</label>
+                        <textarea
+                            id="update-reply-summary"
+                            rows="3"
+                            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                            placeholder="记录要点，便于快速回顾"
+                        >${escapeHtml(replySummaryRaw)}</textarea>
+                    </div>
+
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">备注</label>
                         <textarea
@@ -216,7 +417,33 @@ export function openProfessorModal(professor, application, state) {
                             rows="3"
                             class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
                             placeholder="添加备注..."
-                        >${application.notes || ''}</textarea>
+                        >${escapeHtml(application.notes || '')}</textarea>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">邮件主题</label>
+                        <input
+                            type="text"
+                            id="update-email-subject"
+                            value="${escapeHtml(emailSubjectRaw)}"
+                            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                            placeholder="发送给导师的邮件主题"
+                        >
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">邮件正文摘要</label>
+                        <textarea
+                            id="update-email-body"
+                            rows="4"
+                            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 font-mono text-sm"
+                            placeholder="保留你发送的核心内容，方便日后参考"
+                        >${escapeHtml(emailBodyRaw)}</textarea>
+                    </div>
+
+                    <div class="flex items-center gap-2">
+                        <input type="checkbox" id="update-followup-done" class="h-4 w-4">
+                        <label for="update-followup-done" class="text-sm text-gray-600">本次更新包含一次跟进，自动记录最后跟进时间</label>
                     </div>
 
                     <button
@@ -245,6 +472,14 @@ export function openProfessorModal(professor, application, state) {
 window.updateApplication = async function(applicationId) {
     const status = document.getElementById('update-status').value
     const notes = document.getElementById('update-notes').value
+    const priorityValue = Number(document.getElementById('update-priority')?.value || 3)
+    const matchScoreRaw = document.getElementById('update-match-score')?.value || ''
+    const nextFollowupRaw = document.getElementById('update-next-followup')?.value || ''
+    const tagsInput = document.getElementById('update-tags')?.value || ''
+    const replySummary = document.getElementById('update-reply-summary')?.value || ''
+    const emailSubject = document.getElementById('update-email-subject')?.value || ''
+    const emailBody = document.getElementById('update-email-body')?.value || ''
+    const followupDone = document.getElementById('update-followup-done')?.checked
 
     try {
         const { supabase } = await import('../supabase-config.js')
@@ -255,41 +490,66 @@ window.updateApplication = async function(applicationId) {
             updated_at: new Date().toISOString()
         }
 
-        // 如果状态变为"已回复"，记录回复时间
+        if (!Number.isNaN(priorityValue) && priorityValue >= 1 && priorityValue <= 5) {
+            updateData.priority = priorityValue
+        }
+
+        if (matchScoreRaw === '') {
+            updateData.match_score = null
+        } else {
+            const matchScore = Number(matchScoreRaw)
+            updateData.match_score = Number.isNaN(matchScore) ? null : matchScore
+        }
+
+        if (nextFollowupRaw) {
+            const nextFollowupDate = new Date(nextFollowupRaw)
+            updateData.next_followup_at = Number.isNaN(nextFollowupDate.getTime())
+                ? null
+                : nextFollowupDate.toISOString()
+        } else {
+            updateData.next_followup_at = null
+        }
+
+        const tags = tagsInput
+            .split(',')
+            .map(tag => tag.trim())
+            .filter(tag => tag.length > 0)
+        updateData.tags = tags.length > 0 ? tags : null
+
+        updateData.reply_summary = replySummary.trim() || null
+        updateData.email_subject = emailSubject.trim() || null
+        updateData.email_body = emailBody.trim() || null
+
+        if (followupDone) {
+            updateData.last_followup_at = new Date().toISOString()
+        }
+
         if (status === '已回复') {
             updateData.replied_at = new Date().toISOString()
         }
 
-        const { error } = await supabase
+        const { data, error } = await supabase
             .from('applications')
             .update(updateData)
             .eq('id', applicationId)
+            .select()
+            .single()
 
         if (error) throw error
 
-        window.showToast('更新成功')
+        showToast('更新成功')
         window.closeModal()
 
-        // 更新本地状态而不是刷新页面
-        if (window.appState) {
-            const profId = window.appState.applications.get(applicationId)?.professor_id
-            if (profId) {
-                window.appState.applications.set(profId, {
-                    ...window.appState.applications.get(profId),
-                    status,
-                    notes,
-                    replied_at: status === '已回复' ? new Date().toISOString() : undefined
-                })
-            }
+        if (data?.professor_id) {
+            upsertApplication(data.professor_id, data)
         }
 
-        // 触发列表重新渲染
-        if (window.renderProfessorsList) {
+        if (typeof window.renderProfessorsList === 'function') {
             window.renderProfessorsList()
         }
 
     } catch (error) {
         console.error('更新失败:', error)
-        window.showToast('更新失败: ' + error.message, 'error')
+        showToast('更新失败: ' + error.message, 'error')
     }
 }

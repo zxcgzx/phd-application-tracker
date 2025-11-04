@@ -3,6 +3,7 @@
  */
 
 import { supabase } from '../supabase-config.js'
+import { showToast } from '../core/feedback.js'
 
 export async function renderCrawlerPanel() {
     const container = document.getElementById('crawler-panel')
@@ -171,7 +172,7 @@ window.addUniversity = async function() {
 
         if (error) throw error
 
-        window.showToast(`已添加 ${name}，请在 config.yaml 中配置爬虫规则`)
+        showToast(`已添加 ${name}，请在 config.yaml 中配置爬虫规则`)
 
         // 刷新面板
         renderCrawlerPanel()
@@ -246,7 +247,7 @@ window.deleteUniversity = async function(id, name) {
 
         if (error) throw error
 
-        window.showToast(`已删除 ${name}`)
+        showToast(`已删除 ${name}`)
         renderCrawlerPanel()
 
     } catch (error) {

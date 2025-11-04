@@ -58,6 +58,102 @@ html {
     margin: 0.125rem;
 }
 
+/* 状态快捷操作 */
+.quick-status-group {
+    background-color: #f9fafb;
+    border-radius: 0.75rem;
+    padding: 0.75rem 1rem;
+}
+
+.quick-status-btn {
+    font-size: 0.75rem;
+    line-height: 1;
+    padding: 0.35rem 0.9rem;
+    border-radius: 9999px;
+    border: 1px solid #e5e7eb;
+    background-color: #ffffff;
+    color: #4b5563;
+    transition: all 0.2s ease-in-out;
+}
+
+.quick-status-btn:hover:not(:disabled) {
+    border-color: #bfdbfe;
+    color: #1d4ed8;
+    box-shadow: 0 4px 10px -6px rgba(37, 99, 235, 0.6);
+}
+
+.quick-status-btn.is-active {
+    background-color: #dbeafe;
+    color: #1d4ed8;
+    border-color: #93c5fd;
+    box-shadow: inset 0 0 0 1px rgba(29, 78, 216, 0.15);
+}
+
+.quick-status-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    box-shadow: none;
+}
+
+/* 快捷动作按钮 */
+.quick-action-group {
+    padding: 0.75rem 1rem;
+    background-color: #ffffff;
+    border-radius: 0.75rem;
+    border: 1px dashed #e5e7eb;
+}
+
+.quick-action-btn {
+    font-size: 0.75rem;
+    line-height: 1;
+    padding: 0.35rem 0.8rem;
+    border-radius: 0.5rem;
+    background-color: #f3f4f6;
+    color: #1f2937;
+    transition: all 0.2s ease-in-out;
+    border: 1px solid transparent;
+}
+
+.quick-action-btn:hover:not(:disabled) {
+    background-color: #e5e7eb;
+    color: #111827;
+}
+
+.quick-action-btn.quick-action-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    background-color: #eff6ff;
+    color: #2563eb;
+    border-color: #bfdbfe;
+}
+
+.quick-action-btn.quick-action-link:hover {
+    background-color: #dbeafe;
+    color: #1d4ed8;
+}
+
+.quick-action-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.tag-chip {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.25rem 0.5rem;
+    background-color: #fef3c7;
+    color: #92400e;
+    border-radius: 9999px;
+    font-size: 0.75rem;
+}
+
+button.is-loading,
+.quick-status-btn.is-loading,
+.quick-action-btn.is-loading {
+    cursor: wait !important;
+}
+
 /* 加载动画 */
 .loading {
     display: inline-block;

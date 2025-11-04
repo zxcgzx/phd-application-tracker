@@ -3,6 +3,7 @@
  */
 
 import { supabase } from '../supabase-config.js'
+import { showToast } from '../core/feedback.js'
 
 export async function renderTemplatesPanel() {
     const container = document.getElementById('templates-panel')
@@ -217,7 +218,7 @@ window.saveTemplate = async function(templateId) {
                 .eq('id', templateId)
 
             if (error) throw error
-            window.showToast('模板已更新')
+        showToast('模板已更新')
         } else {
             // 新建
             const { error } = await supabase
@@ -225,7 +226,7 @@ window.saveTemplate = async function(templateId) {
                 .insert(templateData)
 
             if (error) throw error
-            window.showToast('模板已创建')
+        showToast('模板已创建')
         }
 
         closeModal()
@@ -257,7 +258,7 @@ window.useTemplate = async function(templateId) {
             .update({ usage_count: (template.usage_count || 0) + 1 })
             .eq('id', templateId)
 
-        window.showToast('已复制到剪贴板！')
+        showToast('已复制到剪贴板！')
 
     } catch (error) {
         console.error('使用模板失败:', error)
@@ -278,7 +279,7 @@ window.deleteTemplate = async function(id, name) {
 
         if (error) throw error
 
-        window.showToast(`已删除模板 ${name}`)
+        showToast(`已删除模板 ${name}`)
         renderTemplatesPanel()
 
     } catch (error) {
