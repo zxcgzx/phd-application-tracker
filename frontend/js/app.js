@@ -522,6 +522,138 @@ function bindEvents() {
 
     // 初始化数据导入
     initDataImport()
+
+    // 初始化移动端交互
+    initMobileInteractions()
+}
+
+/**
+ * 初始化移动端交互功能
+ * 包括汉堡菜单、侧边栏抽屉和FAB浮动按钮
+ */
+function initMobileInteractions() {
+    // 获取DOM元素
+    const mobileMenuBtn = document.getElementById('mobile-menu-btn')
+    const sidebar = document.getElementById('sidebar')
+    const sidebarOverlay = document.getElementById('sidebar-overlay')
+    const mobileFab = document.getElementById('mobile-fab')
+    const fabMain = mobileFab?.querySelector('.fab-main')
+    const fabAddProfessor = document.getElementById('fab-add-professor')
+    const fabBatchMode = document.getElementById('fab-batch-mode')
+    const fabImportData = document.getElementById('fab-import-data')
+
+    // 切换侧边栏显示/隐藏
+    function toggleSidebar() {
+        const isOpen = sidebar.classList.contains('open')
+
+        if (isOpen) {
+            // 关闭侧边栏
+            sidebar.classList.remove('open')
+            sidebarOverlay.classList.remove('show')
+            mobileMenuBtn.classList.remove('active')
+        } else {
+            // 打开侧边栏
+            sidebar.classList.add('open')
+            sidebarOverlay.classList.add('show')
+            mobileMenuBtn.classList.add('active')
+        }
+    }
+
+    // 汉堡菜单按钮点击事件
+    if (mobileMenuBtn && sidebar && sidebarOverlay) {
+        mobileMenuBtn.addEventListener('click', (e) => {
+            e.stopPropagation()
+            toggleSidebar()
+        })
+
+        // 遮罩层点击事件 - 关闭侧边栏
+        sidebarOverlay.addEventListener('click', () => {
+            toggleSidebar()
+        })
+
+        // 侧边栏内的链接点击后自动关闭侧边栏（移动端）
+        sidebar.querySelectorAll('.sidebar-link').forEach(link => {
+            link.addEventListener('click', () => {
+                // 只在移动端自动关闭
+                if (window.innerWidth <= 768) {
+                    toggleSidebar()
+                }
+            })
+        })
+    }
+
+    // FAB浮动按钮功能
+    if (mobileFab && fabMain) {
+        // 切换FAB展开/收起状态
+        function toggleFAB() {
+            mobileFab.classList.toggle('expanded')
+        }
+
+        // 关闭FAB
+        function closeFAB() {
+            mobileFab.classList.remove('expanded')
+        }
+
+        // FAB主按钮点击事件
+        fabMain.addEventListener('click', (e) => {
+            e.stopPropagation()
+            toggleFAB()
+        })
+
+        // FAB子按钮：新建导师
+        if (fabAddProfessor) {
+            fabAddProfessor.addEventListener('click', () => {
+                closeFAB()
+                // 触发新建导师按钮点击
+                const createBtn = document.getElementById('create-professor-btn')
+                if (createBtn) {
+                    createBtn.click()
+                }
+            })
+        }
+
+        // FAB子按钮：批量操作
+        if (fabBatchMode) {
+            fabBatchMode.addEventListener('click', () => {
+                closeFAB()
+                // 触发批量模式切换
+                handleBatchModeToggle()
+            })
+        }
+
+        // FAB子按钮：导入数据
+        if (fabImportData) {
+            fabImportData.addEventListener('click', () => {
+                closeFAB()
+                // 触发导入数据按钮点击
+                const importBtn = document.getElementById('import-data-btn')
+                if (importBtn) {
+                    importBtn.click()
+                }
+            })
+        }
+
+        // 点击页面其他区域关闭FAB
+        document.addEventListener('click', (e) => {
+            if (!mobileFab.contains(e.target)) {
+                closeFAB()
+            }
+        })
+    }
+
+    // 响应式处理：窗口大小变化时自动关闭侧边栏
+    window.addEventListener('resize', () => {
+        if (window.innerWidth > 768) {
+            // 桌面端自动关闭移动端侧边栏
+            if (sidebar && sidebar.classList.contains('open')) {
+                sidebar.classList.remove('open')
+                sidebarOverlay.classList.remove('show')
+                mobileMenuBtn.classList.remove('active')
+            }
+        }
+    })
+
+    console.log('✅ 移动端交互已初始化')
 }
 
 // 切换 Tab

@@ -28,8 +28,20 @@
     <link rel="stylesheet" href="css/style.css">
 </head>
 <body class="app-body">
+    <!-- 移动端汉堡菜单按钮 -->
+    <button id="mobile-menu-btn" class="mobile-menu-btn" aria-label="打开菜单">
+        <span class="hamburger-icon">
+            <span></span>
+            <span></span>
+            <span></span>
+        </span>
+    </button>
+
+    <!-- 侧边栏遮罩层 -->
+    <div id="sidebar-overlay" class="sidebar-overlay"></div>
+
     <div class="app-shell">
-        <aside class="sidebar">
+        <aside id="sidebar" class="sidebar">
             <div class="sidebar-brand">
                 <div class="brand-mark">🎯</div>
                 <div class="brand-text">
@@ -417,6 +429,24 @@
                     </div>
                 </div>
             </div>
+        </div>
+    </div>
+
+    <!-- 移动端FAB浮动操作按钮 -->
+    <div id="mobile-fab" class="mobile-fab hidden">
+        <button class="fab-main" aria-label="快速操作">
+            <span class="fab-icon">+</span>
+        </button>
+        <div class="fab-actions hidden">
+            <button id="fab-add-professor" class="fab-action" title="新建导师">
+                <span>📝</span>
+            </button>
+            <button id="fab-batch-mode" class="fab-action" title="批量操作">
+                <span>✅</span>
+            </button>
+            <button id="fab-import-data" class="fab-action" title="导入数据">
+                <span>📥</span>
+            </button>
         </div>
     </div>
 
