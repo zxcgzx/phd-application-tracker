@@ -4,6 +4,7 @@
 
 import { showToast } from '../core/feedback.js'
 import { upsertApplication } from '../core/store.js'
+import { renderTimelineSection, initTimelineEvents, addFollowupLog } from './timeline.js'
 
 const QUICK_STATUS_SEQUENCE = ['待发送', '已发送', '已读', '已回复', '待面试', '已接受', '已拒绝']
 const STATUS_ACCENTS = {
@@ -300,7 +301,7 @@ export function renderProfessorCard(professor, application, state) {
 }
 
 // 打开导师详情弹窗
-export function openProfessorModal(professor, application, state) {
+export async function openProfessorModal(professor, application, state) {
     const modal = document.getElementById('professor-modal')
     const content = document.getElementById('modal-content')
 
@@ -316,6 +317,9 @@ export function openProfessorModal(professor, application, state) {
     const lastFollowupText = application?.last_followup_at
         ? new Date(application.last_followup_at).toLocaleString('zh-CN', { hour12: false })
         : ''
+
+    // 异步加载跟进历史时间轴
+    const timelineHTML = await renderTimelineSection(application?.id, state.currentUser)
 
     content.innerHTML = `
         <button onclick="closeModal()" class="modal-close-btn">×</button>
@@ -461,9 +465,19 @@ export function openProfessorModal(professor, application, state) {
                 </button>
             `}
         </section>
+
+        <section class="modal-section">
+            <h3 class="modal-section-title">📅 跟进历史</h3>
+            ${timelineHTML}
+        </section>
     `
 
     modal.classList.remove('hidden')
+
+    // 初始化时间轴事件监听
+    if (application?.id) {
+        initTimelineEvents(application.id, state.currentUser)
+    }
 }
 
 // 更新申请记录（绑定到全局）
@@ -481,6 +495,17 @@ window.updateApplication = async function(applicationId) {
 
     try {
         const { supabase } = await import('../supabase-config.js')
+        const { state } = await import('../core/store.js')
+
+        // 获取原始状态用于比较
+        const { data: originalApp } = await supabase
+            .from('applications')
+            .select('status, sent_by')
+            .eq('id', applicationId)
+            .single()
+
+        const originalStatus = originalApp?.status || '待发送'
+        const currentUser = state.currentUser || originalApp?.sent_by || 'Unknown'
 
         const updateData = {
             status,
@@ -534,6 +559,40 @@ window.updateApplication = async function(applicationId) {
             .single()
 
         if (error) throw error
+
+        // 自动创建跟进记录
+        const statusChanged = originalStatus !== status
+        if (statusChanged) {
+            let logType = null
+            let logContent = `状态从「${originalStatus}」变更为「${status}」`
+
+            if (status === '已发送' && originalStatus !== '已发送') {
+                logType = 'sent_email'
+                logContent = emailSubject
+                    ? `发送邮件：${emailSubject}`
+                    : '发送申请邮件'
+            } else if (status === '已回复' && originalStatus !== '已回复') {
+                logType = 'received_reply'
+                logContent = replySummary
+                    ? `收到回复：${replySummary}`
+                    : '导师已回复邮件'
+            } else if (status === '待面试') {
+                logType = 'status_change'
+                logContent = '进入面试环节'
+            } else {
+                logType = 'status_change'
+            }
+
+            if (logType) {
+                await addFollowupLog(applicationId, logType, logContent, currentUser)
+            }
+        }
+
+        // 如果勾选了"本次更新包含跟进"，创建一般跟进记录
+        if (followupDone && !statusChanged) {
+            const content = notes || '跟进导师申请进度'
+            await addFollowupLog(applicationId, 'note', content, currentUser)
+        }
 
         showToast('更新成功')
         window.closeModal()
