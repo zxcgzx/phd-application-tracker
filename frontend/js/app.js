@@ -33,6 +33,12 @@ import {
     closeModal
 } from './features/professors/view.js'
 import { initAdvancedFilters } from './features/professors/advanced-filters.js'
+import {
+    initBatchDropdowns,
+    batchScheduleFollowup,
+    batchAddTags,
+    batchDelete
+} from './features/professors/batch-operations.js'
 
 const DEFAULT_PAGE_SIZE = 24
 const STATUS_NEEDS_SENT_AT = new Set(['已发送', '已读', '已回复', '待面试', '已接受', '已拒绝'])
@@ -420,8 +426,28 @@ function bindEvents() {
     // 批量操作
     document.getElementById('batch-mode-btn').addEventListener('click', handleBatchModeToggle)
     document.getElementById('batch-cancel').addEventListener('click', () => handleBatchModeToggle({ force: false }))
-    document.getElementById('batch-mark-sent').addEventListener('click', batchMarkAsSent)
     document.getElementById('batch-export').addEventListener('click', batchExport)
+
+    // 初始化批量操作下拉菜单
+    initBatchDropdowns()
+
+    // 批量跟进
+    const batchFollowupBtn = document.getElementById('batch-followup-btn')
+    if (batchFollowupBtn) {
+        batchFollowupBtn.addEventListener('click', batchScheduleFollowup)
+    }
+
+    // 批量添加标签
+    const batchTagsBtn = document.getElementById('batch-tags-btn')
+    if (batchTagsBtn) {
+        batchTagsBtn.addEventListener('click', batchAddTags)
+    }
+
+    // 批量删除
+    const batchDeleteBtn = document.getElementById('batch-delete')
+    if (batchDeleteBtn) {
+        batchDeleteBtn.addEventListener('click', batchDelete)
+    }
 
     const createBtn = document.getElementById('create-professor-btn')
     if (createBtn) {

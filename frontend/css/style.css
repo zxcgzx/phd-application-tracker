@@ -1713,3 +1713,65 @@ button.is-loading,
         width: 100%;
     }
 }
+
+/* ==================== 批量操作下拉菜单样式 ==================== */
+
+.batch-dropdown {
+    position: relative;
+    display: inline-block;
+}
+
+.batch-dropdown-menu {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    z-index: 1000;
+    min-width: 160px;
+    margin-top: 4px;
+    background: white;
+    border: 1px solid #e0e6ed;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    overflow: hidden;
+}
+
+.batch-dropdown-menu.hidden {
+    display: none;
+}
+
+.batch-menu-item {
+    display: block;
+    width: 100%;
+    padding: 10px 16px;
+    text-align: left;
+    font-size: 14px;
+    color: #2c3e50;
+    background: white;
+    border: none;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.batch-menu-item:hover {
+    background: #f5f7fa;
+}
+
+.batch-menu-item:active {
+    background: #e8ecf1;
+}
+
+.dropdown-btn {
+    position: relative;
+    padding-right: 32px;
+}
+
+.dropdown-btn::after {
+    content: '▾';
+    position: absolute;
+    right: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 12px;
+    opacity: 0.6;
+}
+
