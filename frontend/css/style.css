@@ -2088,3 +2088,373 @@ button.is-loading,
     }
 }
 
+/* ==========================================
+   自定义Modal组件样式
+   ========================================== */
+
+/* Modal遮罩层 */
+.custom-modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10000;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    padding: 16px;
+}
+
+.custom-modal-overlay.show {
+    opacity: 1;
+}
+
+/* Modal容器 */
+.custom-modal {
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+    max-width: 480px;
+    width: 100%;
+    max-height: 90vh;
+    overflow: auto;
+    transform: scale(0.95);
+    transition: transform 0.3s ease;
+}
+
+.custom-modal-overlay.show .custom-modal {
+    transform: scale(1);
+}
+
+/* Modal头部 */
+.custom-modal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 20px 24px;
+    border-bottom: 1px solid #e2e8f0;
+}
+
+.custom-modal-header h3 {
+    margin: 0;
+    font-size: 18px;
+    font-weight: 600;
+    color: #1e293b;
+}
+
+.custom-modal-close {
+    background: none;
+    border: none;
+    font-size: 28px;
+    line-height: 1;
+    color: #64748b;
+    cursor: pointer;
+    padding: 0;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 6px;
+    transition: all 0.2s;
+}
+
+.custom-modal-close:hover {
+    background: #f1f5f9;
+    color: #334155;
+}
+
+/* Modal主体 */
+.custom-modal-body {
+    padding: 24px;
+}
+
+.custom-modal-body p {
+    margin: 0 0 16px 0;
+    color: #475569;
+    font-size: 14px;
+    line-height: 1.6;
+}
+
+/* Modal详细信息 */
+.custom-modal-details {
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 12px;
+    margin-top: 12px;
+    font-size: 13px;
+    color: #64748b;
+    max-height: 200px;
+    overflow-y: auto;
+}
+
+/* Modal输入框 */
+.custom-modal-input {
+    width: 100%;
+    padding: 10px 12px;
+    border: 1px solid #cbd5e1;
+    border-radius: 8px;
+    font-size: 14px;
+    color: #1e293b;
+    transition: all 0.2s;
+}
+
+.custom-modal-input:focus {
+    outline: none;
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.custom-modal-input.error {
+    border-color: #ef4444;
+}
+
+.custom-modal-input.error:focus {
+    box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1);
+}
+
+/* Modal错误提示 */
+.custom-modal-error {
+    color: #ef4444;
+    font-size: 13px;
+    margin-top: 8px;
+    min-height: 20px;
+}
+
+/* Modal底部 */
+.custom-modal-footer {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 12px;
+    padding: 16px 24px;
+    border-top: 1px solid #e2e8f0;
+}
+
+/* Modal按钮 */
+.custom-modal-btn-cancel,
+.custom-modal-btn-confirm {
+    padding: 10px 20px;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+    border: none;
+    outline: none;
+}
+
+.custom-modal-btn-cancel {
+    background: #f1f5f9;
+    color: #475569;
+}
+
+.custom-modal-btn-cancel:hover {
+    background: #e2e8f0;
+}
+
+.custom-modal-btn-confirm {
+    background: #3b82f6;
+    color: white;
+}
+
+.custom-modal-btn-confirm:hover {
+    background: #2563eb;
+}
+
+.custom-modal-btn-confirm.danger {
+    background: #ef4444;
+}
+
+.custom-modal-btn-confirm.danger:hover {
+    background: #dc2626;
+}
+
+.custom-modal-btn-confirm.warning {
+    background: #f59e0b;
+}
+
+.custom-modal-btn-confirm.warning:hover {
+    background: #d97706;
+}
+
+/* danger类型Modal */
+.custom-modal.danger .custom-modal-header {
+    background: #fef2f2;
+    border-bottom-color: #fecaca;
+}
+
+.custom-modal.danger .custom-modal-header h3 {
+    color: #dc2626;
+}
+
+/* warning类型Modal */
+.custom-modal.warning .custom-modal-header {
+    background: #fffbeb;
+    border-bottom-color: #fde68a;
+}
+
+.custom-modal.warning .custom-modal-header h3 {
+    color: #d97706;
+}
+
+/* 响应式调整 */
+@media (max-width: 640px) {
+    .custom-modal-overlay {
+        padding: 0;
+    }
+
+    .custom-modal {
+        max-width: 100%;
+        max-height: 100vh;
+        border-radius: 0;
+    }
+
+    .custom-modal-header,
+    .custom-modal-body,
+    .custom-modal-footer {
+        padding-left: 16px;
+        padding-right: 16px;
+    }
+
+    .custom-modal-footer {
+        flex-direction: column-reverse;
+    }
+
+    .custom-modal-btn-cancel,
+    .custom-modal-btn-confirm {
+        width: 100%;
+    }
+}
+
+/* ========================================
+   骨架屏加载动画 (Skeleton Screens)
+   ======================================== */
+
+/* 基础骨架屏元素 */
+.skeleton {
+    background: linear-gradient(
+        90deg,
+        #f0f0f0 0%,
+        #e0e0e0 20%,
+        #f0f0f0 40%,
+        #f0f0f0 100%
+    );
+    background-size: 200% 100%;
+    animation: skeleton-loading 1.5s ease-in-out infinite;
+    border-radius: 4px;
+}
+
+@keyframes skeleton-loading {
+    0% {
+        background-position: 200% 0;
+    }
+    100% {
+        background-position: -200% 0;
+    }
+}
+
+/* 骨架屏卡片 */
+.skeleton-card {
+    pointer-events: none;
+}
+
+/* 各种骨架屏元素类型 */
+.skeleton-header {
+    height: 24px;
+    margin-bottom: 12px;
+    width: 60%;
+}
+
+.skeleton-text {
+    height: 14px;
+    margin-bottom: 8px;
+    width: 100%;
+}
+
+.skeleton-text.short {
+    width: 70%;
+}
+
+.skeleton-button {
+    height: 32px;
+    width: 80px;
+    border-radius: 6px;
+}
+
+.skeleton-circle {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+}
+
+.skeleton-number {
+    height: 36px;
+    width: 60px;
+}
+
+/* 骨架屏Footer */
+.skeleton-footer {
+    display: flex;
+    gap: 8px;
+    margin-top: 12px;
+}
+
+/* 时间线骨架屏 */
+.timeline-skeleton {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+}
+
+.timeline-item-skeleton {
+    display: flex;
+    gap: 16px;
+    align-items: flex-start;
+}
+
+.skeleton-content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+/* 列表骨架屏 */
+.list-skeleton {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.list-item-skeleton {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 12px;
+    background: #f8fafc;
+    border-radius: 8px;
+}
+
+/* 暗色主题支持 */
+@media (prefers-color-scheme: dark) {
+    .skeleton {
+        background: linear-gradient(
+            90deg,
+            #2d3748 0%,
+            #4a5568 20%,
+            #2d3748 40%,
+            #2d3748 100%
+        );
+    }
+
+    .list-item-skeleton {
+        background: #1a202c;
+    }
+}
+

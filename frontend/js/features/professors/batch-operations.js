@@ -6,6 +6,7 @@
 import { supabase } from '../../supabase-config.js'
 import { showToast } from '../../core/feedback.js'
 import { state, upsertApplication } from '../../core/store.js'
+import { showPrompt, showConfirm } from '../../components/modal.js'
 
 /**
  * 初始化批量操作的下拉菜单
@@ -268,14 +269,23 @@ export async function batchScheduleFollowup() {
         return
     }
 
-    const days = prompt('请输入跟进天数 (例如: 3表示3天后跟进):', '3')
+    const days = await showPrompt({
+        title: '批量安排跟进',
+        message: `将为 ${count} 位导师安排跟进提醒`,
+        placeholder: '请输入跟进天数（例如: 3表示3天后跟进）',
+        defaultValue: '3',
+        inputType: 'number',
+        validator: (value) => {
+            const num = parseInt(value)
+            if (isNaN(num) || num <= 0) {
+                return '请输入大于0的整数'
+            }
+            return true
+        }
+    })
     if (!days) return
 
     const daysNum = parseInt(days)
-    if (isNaN(daysNum) || daysNum <= 0) {
-        showToast('请输入有效的天数', 'error')
-        return
-    }
 
     const targetDate = new Date()
     targetDate.setDate(targetDate.getDate() + daysNum)
@@ -341,7 +351,18 @@ export async function batchAddTags() {
         return
     }
 
-    const tagsInput = prompt('请输入要添加的标签 (多个标签用逗号分隔):', '')
+    const tagsInput = await showPrompt({
+        title: '批量添加标签',
+        message: `将为 ${count} 位导师添加标签`,
+        placeholder: '请输入标签（多个标签用逗号分隔）',
+        defaultValue: '',
+        validator: (value) => {
+            if (!value.trim()) {
+                return '请输入至少一个标签'
+            }
+            return true
+        }
+    })
     if (!tagsInput) return
 
     const newTags = tagsInput
@@ -437,9 +458,14 @@ export async function batchDelete() {
         return
     }
 
-    const confirmed = window.confirm(
-        `确定要删除 ${count} 位导师吗？此操作不可恢复。`
-    )
+    const confirmed = await showConfirm({
+        title: '批量删除导师',
+        message: `确定要删除 ${count} 位导师吗？`,
+        details: '此操作不可恢复，请谨慎操作！',
+        type: 'danger',
+        confirmText: '确认删除',
+        cancelText: '取消'
+    })
     if (!confirmed) return
 
     const selectedIds = Array.from(state.selectedProfessors)

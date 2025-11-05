@@ -9,6 +9,8 @@ import { renderStatsPanel } from './components/stats-dashboard.js'
 import { renderCrawlerPanel } from './components/crawler-manager.js'
 import { showToast, showLoading } from './core/feedback.js'
 import { calculateStats } from './core/stats.js'
+import { showConfirm } from './components/modal.js'
+import { debounce } from './utils/debounce.js'
 import {
     state,
     setCurrentTab,
@@ -314,7 +316,14 @@ async function deleteProfessor(professorId) {
         return false
     }
 
-    const confirmed = window.confirm(`确认删除 ${professor.name} 吗？此操作不可恢复。`)
+    const confirmed = await showConfirm({
+        title: '删除导师',
+        message: `确认删除 ${professor.name} 吗？`,
+        details: '此操作不可恢复，请谨慎操作！',
+        type: 'danger',
+        confirmText: '确认删除',
+        cancelText: '取消'
+    })
     if (!confirmed) {
         return false
     }
@@ -394,12 +403,21 @@ function bindEvents() {
         btn.addEventListener('click', () => switchTab(btn.dataset.tab))
     })
 
-    // 搜索
-    document.getElementById('search-input').addEventListener('input', (e) => {
-        updateFilters({ search: e.target.value })
+    // 搜索 - 使用防抖优化
+    const debouncedSearch = debounce((searchValue) => {
+        updateFilters({ search: searchValue })
         setDisplayLimit(DEFAULT_PAGE_SIZE)
         scheduleFiltersPersist()
         applyFilters()
+    }, 300)
+
+    document.getElementById('search-input').addEventListener('input', (e) => {
+        // 立即更新输入值，但延迟触发过滤
+        const value = e.target.value
+        // 先更新state中的search值（立即反馈）
+        state.filters.search = value
+        // 然后延迟执行过滤操作
+        debouncedSearch(value)
     })
 
     // 筛选器
