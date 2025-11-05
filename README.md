@@ -68,7 +68,46 @@ const SUPABASE_URL = 'https://你的项目.supabase.co'
 const SUPABASE_ANON_KEY = '你的anon_key'
 ```
 
-### 第三步: 部署到 Vercel (推荐)
+### 第三步: 部署前端（三选一）
+
+#### ⭐ 方式A: Cloudflare Pages 部署（推荐，国内访问快）
+
+**优势**: 国内访问无需翻墙，全球 CDN 加速，完全免费
+
+1. **访问 Cloudflare Pages**
+   - 访问 [https://pages.cloudflare.com](https://pages.cloudflare.com)
+   - 使用 GitHub 账号登录
+
+2. **连接 GitHub 仓库**
+   - 点击 "Create a project" → "Connect to Git"
+   - 选择你的仓库 `phd-application-tracker`
+
+3. **配置构建设置**
+   - Project name: `phd-application-tracker`
+   - Production branch: `main`
+   - Framework preset: `None`
+   - Build command: 留空
+   - Build output directory: `/`
+
+4. **保存并部署**
+   - 点击 "Save and Deploy"
+   - 等待 30 秒，获得网址: `https://你的项目名.pages.dev`
+
+**📖 详细教程**: [Cloudflare Pages 部署指南](docs/CLOUDFLARE_PAGES_DEPLOYMENT.md)
+
+---
+
+#### 方式B: GitHub Pages（备用，同样免费）
+
+**当前可用地址**: `https://zxcgzx.github.io/phd-application-tracker/`
+
+GitHub Pages 已经自动配置好，无需额外操作。每次 git push 会自动部署。
+
+---
+
+#### 方式C: Vercel（需要翻墙）
+
+⚠️ **注意**: Vercel 在中国大陆访问需要翻墙，建议使用 Cloudflare Pages。
 
 1. **注册 Vercel**
    - 访问 [https://vercel.com](https://vercel.com)
@@ -76,15 +115,21 @@ const SUPABASE_ANON_KEY = '你的anon_key'
 
 2. **导入项目**
    - 点击 "Add New..." → "Project"
-   - 选择你的 GitHub 仓库 `申请博士记录`
+   - 选择你的 GitHub 仓库
    - Framework Preset: 选择 "Other"
-   - Root Directory: 留空或选择 `frontend`
+   - Root Directory: 留空
    - 点击 "Deploy"
 
 3. **完成部署**
    - 等待部署完成(约 1 分钟)
-   - 获得网址,例如: `https://your-project.vercel.app`
-   - 在手机或电脑上打开即可使用！
+   - 获得网址: `https://your-project.vercel.app`
+
+---
+
+**推荐部署策略**:
+- 🥇 主力: Cloudflare Pages（国内访问快，无需翻墙）
+- 🥈 备用: GitHub Pages（已配置好，完全免费）
+- 🥉 可选: Vercel（如果你在国外或有翻墙工具）
 
 ### 第四步: 配置爬虫 (两种方式任选其一)
 
