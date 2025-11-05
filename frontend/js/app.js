@@ -727,8 +727,9 @@ async function loadData() {
 
         const applicationsMap = new Map()
         professors?.forEach(prof => {
-            if (prof.applications && prof.applications.length > 0) {
-                const record = { ...prof.applications[0] }
+            // Supabase 对于一对一关系返回单个对象（不是数组）
+            if (prof.applications && typeof prof.applications === 'object' && prof.applications.id) {
+                const record = { ...prof.applications }
                 record.sent_by = normalizeUserName(record.sent_by, { allowEmpty: true })
                 applicationsMap.set(prof.id, record)
             }
