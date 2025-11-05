@@ -102,6 +102,7 @@
                         </select>
                         <button id="batch-mode-btn" class="secondary-btn">批量操作</button>
                         <button id="create-professor-btn" class="primary-btn">新建导师</button>
+                        <button id="import-data-btn" class="secondary-btn">导入数据</button>
                         <button id="advanced-filter-toggle" class="secondary-btn">
                             <span id="advanced-filter-icon">▼</span> 高级筛选
                         </button>
@@ -355,6 +356,65 @@
                         <button type="submit" class="primary-btn">保存</button>
                     </div>
                 </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- 导入数据模态框 -->
+    <div id="import-modal" class="modal-backdrop hidden">
+        <div class="modal-card modal-card-large">
+            <div class="modal-body">
+                <div class="modal-header">
+                    <div>
+                        <h2 class="modal-title">导入导师数据</h2>
+                        <p class="modal-subtitle">从CSV文件批量导入导师信息</p>
+                    </div>
+                    <button id="import-modal-close" class="modal-close-btn" aria-label="关闭">×</button>
+                </div>
+
+                <div class="import-content">
+                    <!-- 文件上传区 -->
+                    <div class="import-upload-section">
+                        <div id="csv-drop-zone" class="csv-drop-zone">
+                            <div class="drop-zone-icon">📁</div>
+                            <p class="drop-zone-text">拖拽CSV文件到此处，或点击选择文件</p>
+                            <p class="drop-zone-hint">支持UTF-8编码的CSV文件</p>
+                            <input type="file" id="csv-file-input" accept=".csv" class="hidden">
+                        </div>
+
+                        <div class="import-actions">
+                            <button id="download-template-btn" class="secondary-btn-sm">
+                                下载CSV模板
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- CSV字段说明 -->
+                    <div class="import-info">
+                        <h4 class="import-info-title">CSV格式要求：</h4>
+                        <ul class="import-info-list">
+                            <li><strong>姓名</strong>：必填，导师姓名</li>
+                            <li><strong>职称</strong>：选填，如"教授"、"副教授"等</li>
+                            <li><strong>学校名称</strong>：必填，导师所在学校</li>
+                            <li><strong>学院</strong>：选填，导师所在学院</li>
+                            <li><strong>系所</strong>：选填，导师所在系所</li>
+                            <li><strong>邮箱</strong>：选填，导师邮箱地址</li>
+                            <li><strong>电话</strong>：选填，导师联系电话</li>
+                            <li><strong>研究方向</strong>：选填，多个方向用分号（;）分隔</li>
+                            <li><strong>主页链接</strong>：选填，导师个人主页URL</li>
+                        </ul>
+                    </div>
+
+                    <!-- 数据预览区 -->
+                    <div id="import-preview-container"></div>
+
+                    <!-- 导入按钮 -->
+                    <div class="import-footer">
+                        <button id="execute-import-btn" class="primary-btn" disabled>
+                            开始导入
+                        </button>
+                    </div>
+                </div>
             </div>
         </div>
     </div>

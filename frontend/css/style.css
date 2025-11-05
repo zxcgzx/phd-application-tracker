@@ -1775,3 +1775,290 @@ button.is-loading,
     opacity: 0.6;
 }
 
+/* ==========================================
+   数据导入功能样式
+   ========================================== */
+
+/* 大尺寸模态框 */
+.modal-card-large {
+    max-width: 900px;
+    width: 95%;
+}
+
+/* 导入内容容器 */
+.import-content {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+}
+
+/* 文件上传区域 */
+.import-upload-section {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+/* CSV拖放区域 */
+.csv-drop-zone {
+    border: 2px dashed #cbd5e1;
+    border-radius: 12px;
+    padding: 48px 24px;
+    text-align: center;
+    background: #f8fafc;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.csv-drop-zone:hover {
+    border-color: #03A9F4;
+    background: #f0f9ff;
+}
+
+.csv-drop-zone.drag-over {
+    border-color: #03A9F4;
+    background: #e0f2fe;
+    border-style: solid;
+}
+
+.drop-zone-icon {
+    font-size: 48px;
+    margin-bottom: 16px;
+}
+
+.drop-zone-text {
+    font-size: 16px;
+    font-weight: 500;
+    color: #1e293b;
+    margin-bottom: 8px;
+}
+
+.drop-zone-hint {
+    font-size: 14px;
+    color: #64748b;
+}
+
+/* CSV字段说明 */
+.import-info {
+    background: #f8fafc;
+    border-radius: 8px;
+    padding: 20px;
+    border-left: 4px solid #03A9F4;
+}
+
+.import-info-title {
+    font-size: 14px;
+    font-weight: 600;
+    color: #1e293b;
+    margin-bottom: 12px;
+}
+
+.import-info-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 8px;
+}
+
+.import-info-list li {
+    font-size: 13px;
+    color: #475569;
+    padding: 4px 0;
+}
+
+.import-info-list li strong {
+    color: #1e293b;
+    font-weight: 600;
+}
+
+/* 导入操作按钮 */
+.import-actions {
+    display: flex;
+    justify-content: center;
+    gap: 12px;
+}
+
+/* 数据预览区域 */
+.import-preview {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+/* 统计信息 */
+.import-stats {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+}
+
+.stat-item {
+    background: #f8fafc;
+    border-radius: 8px;
+    padding: 16px;
+    text-align: center;
+    border: 1px solid #e2e8f0;
+}
+
+.stat-item.stat-total {
+    background: #f0f9ff;
+    border-color: #bae6fd;
+}
+
+.stat-item.stat-valid {
+    background: #f0fdf4;
+    border-color: #bbf7d0;
+}
+
+.stat-item.stat-error {
+    background: #fef2f2;
+    border-color: #fecaca;
+}
+
+.stat-label {
+    display: block;
+    font-size: 12px;
+    color: #64748b;
+    margin-bottom: 8px;
+    font-weight: 500;
+}
+
+.stat-value {
+    display: block;
+    font-size: 24px;
+    font-weight: 700;
+    color: #1e293b;
+}
+
+.stat-total .stat-value {
+    color: #0284c7;
+}
+
+.stat-valid .stat-value {
+    color: #16a34a;
+}
+
+.stat-error .stat-value {
+    color: #dc2626;
+}
+
+/* 错误列表 */
+.import-errors {
+    background: #fef2f2;
+    border: 1px solid #fecaca;
+    border-radius: 8px;
+    padding: 16px;
+}
+
+.import-errors h4 {
+    font-size: 14px;
+    font-weight: 600;
+    color: #dc2626;
+    margin-bottom: 12px;
+}
+
+.import-errors ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.import-errors li {
+    font-size: 13px;
+    color: #991b1b;
+    padding: 6px 0;
+    border-bottom: 1px solid #fee2e2;
+}
+
+.import-errors li:last-child {
+    border-bottom: none;
+}
+
+/* 预览表格容器 */
+.import-table-wrapper {
+    overflow-x: auto;
+}
+
+.import-table-wrapper h4 {
+    font-size: 14px;
+    font-weight: 600;
+    color: #1e293b;
+    margin-bottom: 12px;
+}
+
+/* 预览表格 */
+.import-preview-table {
+    width: 100%;
+    border-collapse: collapse;
+    background: white;
+    border-radius: 8px;
+    overflow: hidden;
+    border: 1px solid #e2e8f0;
+}
+
+.import-preview-table thead {
+    background: #f8fafc;
+}
+
+.import-preview-table th {
+    padding: 12px 16px;
+    text-align: left;
+    font-size: 12px;
+    font-weight: 600;
+    color: #475569;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    border-bottom: 2px solid #e2e8f0;
+}
+
+.import-preview-table td {
+    padding: 12px 16px;
+    font-size: 13px;
+    color: #1e293b;
+    border-bottom: 1px solid #f1f5f9;
+}
+
+.import-preview-table tbody tr:hover {
+    background: #f8fafc;
+}
+
+.import-preview-table tbody tr:last-child td {
+    border-bottom: none;
+}
+
+/* 导入按钮区域 */
+.import-footer {
+    display: flex;
+    justify-content: center;
+    padding-top: 8px;
+}
+
+.import-footer .primary-btn {
+    min-width: 160px;
+}
+
+/* 响应式调整 */
+@media (max-width: 768px) {
+    .modal-card-large {
+        width: 100%;
+        max-width: 100%;
+        margin: 0;
+        border-radius: 0;
+        max-height: 100vh;
+    }
+
+    .import-stats {
+        grid-template-columns: 1fr;
+    }
+
+    .import-info-list {
+        grid-template-columns: 1fr;
+    }
+
+    .csv-drop-zone {
+        padding: 32px 16px;
+    }
+}
+

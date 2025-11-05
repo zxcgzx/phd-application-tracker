@@ -39,6 +39,7 @@ import {
     batchAddTags,
     batchDelete
 } from './features/professors/batch-operations.js'
+import { initDataImport } from './features/import/import-data.js'
 
 const DEFAULT_PAGE_SIZE = 24
 const STATUS_NEEDS_SENT_AT = new Set(['已发送', '已读', '已回复', '待面试', '已接受', '已拒绝'])
@@ -500,6 +501,9 @@ function bindEvents() {
 
     // 初始化高级筛选
     initAdvancedFilters()
+
+    // 初始化数据导入
+    initDataImport()
 }
 
 // 切换 Tab
