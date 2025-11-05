@@ -63,12 +63,12 @@
 
 #### Secret 1: SUPABASE_URL
 ```
-https://cacvfqtupprixlmzrury.supabase.co
+https://<你的项目地址>.supabase.co
 ```
 
 #### Secret 2: SUPABASE_SERVICE_KEY
 ```
-eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNhY3ZmcXR1cHByaXhsbXpydXJ5Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc2MjEzMjU5MywiZXhwIjoyMDc3NzA4NTkzfQ.hbqrmQKt5_Pjn6bAwxhik2v9KHsiTY-edwPjEtWn2fg
+<你的 service_role key>
 ```
 
 **⚠️ 注意**:

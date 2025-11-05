@@ -124,7 +124,17 @@ class SupabaseSync:
             True 需要更新，False 无需更新
         """
         # 检查关键字段是否有变化
-        fields_to_check = ['title', 'research_areas', 'homepage', 'office_location']
+        fields_to_check = [
+            'title',
+            'research_areas',
+            'homepage',
+            'profile_url',
+            'office_location',
+            'department',
+            'email',
+            'phone',
+            'education_background'
+        ]
 
         for field in fields_to_check:
             if field in new_data:
@@ -141,8 +151,12 @@ class SupabaseSync:
             'title': prof.get('title'),
             'research_areas': prof.get('research_areas', []),
             'homepage': prof.get('homepage'),
-            'profile_url': prof.get('homepage'),
+            'profile_url': prof.get('profile_url') or prof.get('homepage'),
             'office_location': prof.get('office_location'),
+            'department': prof.get('department'),
+            'email': prof.get('email'),
+            'phone': prof.get('phone'),
+            'education_background': prof.get('education_background'),
             'raw_html': prof.get('raw_html'),
             'is_active': True
         }
@@ -158,7 +172,12 @@ class SupabaseSync:
             'title': prof.get('title'),
             'research_areas': prof.get('research_areas', []),
             'homepage': prof.get('homepage'),
+            'profile_url': prof.get('profile_url') or prof.get('homepage'),
             'office_location': prof.get('office_location'),
+            'department': prof.get('department'),
+            'email': prof.get('email'),
+            'phone': prof.get('phone'),
+            'education_background': prof.get('education_background'),
             'updated_at': datetime.utcnow().isoformat()
         }
 

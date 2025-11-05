@@ -7,12 +7,14 @@ import urllib.request
 import json
 import os
 
-# Supabase配置
-SUPABASE_URL = "https://cacvfqtupprixlmzrury.supabase.co"
-SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNhY3ZmcXR1cHByaXhsbXpydXJ5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjIxMzI1OTMsImV4cCI6MjA3NzcwODU5M30.tEm33FremWW86fPhlUiU2_ZQ4sq5PklaAt5ZkxRNm4I"
+SUPABASE_URL = os.getenv("SUPABASE_URL")
+SUPABASE_KEY = os.getenv("SUPABASE_SERVICE_KEY") or os.getenv("SUPABASE_ANON_KEY")
 
 def query_table(table_name, select="*", limit=None):
     """查询Supabase表"""
+    if not SUPABASE_URL or not SUPABASE_KEY:
+        raise RuntimeError("未提供 Supabase 配置")
+
     url = f"{SUPABASE_URL}/rest/v1/{table_name}?select={select}"
     if limit:
         url += f"&limit={limit}"
@@ -38,6 +40,12 @@ def main():
     print("Supabase 数据库诊断")
     print("=" * 70)
     print()
+
+    if not SUPABASE_URL or not SUPABASE_KEY:
+        print("❌ 未检测到 Supabase 配置。")
+        print("   请在运行前设置环境变量 SUPABASE_URL 以及 SUPABASE_SERVICE_KEY（可选：SUPABASE_ANON_KEY）。")
+        print()
+        return
 
     # 1. 检查universities表
     print("1️⃣  检查 universities 表...")

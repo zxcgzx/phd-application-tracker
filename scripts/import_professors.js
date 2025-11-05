@@ -6,8 +6,13 @@
 
 const cheerio = require('cheerio')
 
-const SUPABASE_URL = 'https://cacvfqtupprixlmzrury.supabase.co'
-const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNhY3ZmcXR1cHByaXhsbXpydXJ5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjIxMzI1OTMsImV4cCI6MjA3NzcwODU5M30.tEm33FremWW86fPhlUiU2_ZQ4sq5PklaAt5ZkxRNm4I'
+const SUPABASE_URL = process.env.SUPABASE_URL
+const SUPABASE_KEY = process.env.SUPABASE_SERVICE_KEY
+
+if (!SUPABASE_URL || !SUPABASE_KEY) {
+    console.error('❌ 未检测到 Supabase 配置，请在运行前设置环境变量 SUPABASE_URL 和 SUPABASE_SERVICE_KEY。')
+    process.exit(1)
+}
 
 const UNIVERSITIES = [
     {

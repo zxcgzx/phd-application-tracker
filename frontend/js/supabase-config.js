@@ -8,9 +8,9 @@
  * 4. 将下面的值替换为你的实际值
  */
 
-// ⚠️ 重要: 请替换为你的 Supabase 项目配置
-const SUPABASE_URL = 'https://cacvfqtupprixlmzrury.supabase.co'
-const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNhY3ZmcXR1cHByaXhsbXpydXJ5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjIxMzI1OTMsImV4cCI6MjA3NzcwODU5M30.tEm33FremWW86fPhlUiU2_ZQ4sq5PklaAt5ZkxRNm4I'
+// ⚠️ 重要: 请在部署前通过 window.__SUPABASE_CONFIG__ 或直接编辑本文件设置真实配置
+const SUPABASE_URL = window.__SUPABASE_CONFIG__?.url ?? 'YOUR_SUPABASE_URL'
+const SUPABASE_ANON_KEY = window.__SUPABASE_CONFIG__?.anonKey ?? 'YOUR_SUPABASE_ANON_KEY'
 
 // 创建 Supabase 客户端
 export const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY)

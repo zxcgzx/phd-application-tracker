@@ -22,12 +22,12 @@
 
 4. **添加第一个Secret: SUPABASE_URL**
    - Name: `SUPABASE_URL`
-   - Secret: `https://cacvfqtupprixlmzrury.supabase.co`
+   - Secret: `https://<你的项目地址>.supabase.co`
    - 点击 `Add secret`
 
 5. **添加第二个Secret: SUPABASE_SERVICE_KEY**
    - Name: `SUPABASE_SERVICE_KEY`
-   - Secret: `eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNhY3ZmcXR1cHByaXhsbXpydXJ5Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc2MjEzMjU5MywiZXhwIjoyMDc3NzA4NTkzfQ.hbqrmQKt5_Pjn6bAwxhik2v9KHsiTY-edwPjEtWn2fg`
+   - Secret: `你的 service_role key`
    - 点击 `Add secret`
 
 ✅ 配置完成!现在GitHub Actions可以安全地访问你的数据库了。

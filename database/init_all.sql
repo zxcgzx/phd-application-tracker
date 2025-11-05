@@ -209,7 +209,7 @@ VALUES (
   '北京理工大学自动化学院',
   'https://ac.bit.edu.cn/szdw/dsmd/bssds/index.htm',
   'two_level',
-  '{"container": "ul > li", "link": "a", "name": "a"}',
+  '{"container": "ul.list01.list002 > li", "link": "a", "name": "a"}',
   '{
     "email": ["a[href^=\"mailto:\"]", "text containing @"],
     "phone": ["text matching \\d{3,4}-\\d{7,8}"],
