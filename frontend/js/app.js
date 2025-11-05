@@ -560,6 +560,18 @@ async function loadData() {
     }
 }
 
+function getUniversityName(professor) {
+    if (!professor) return ''
+    const nested = Array.isArray(professor.universities)
+        ? professor.universities[0]
+        : professor.universities
+    if (nested?.name) {
+        return nested.name
+    }
+    const mapped = state.universities.get(professor.university_id)
+    return mapped?.name || ''
+}
+
 function refreshProfessorsView() {
     const { filtered, visibleCount } = renderProfessorsList(state, { limit: state.displayLimit })
     bindProfessorCardEvents(state, {
@@ -823,7 +835,7 @@ function batchExport() {
         return [
             prof.name,
             prof.title || '',
-            prof.universities?.name || '',
+            getUniversityName(prof) || '',
             prof.homepage || '',
             prof.research_areas?.join('; ') || '',
             app?.status || '待发送',

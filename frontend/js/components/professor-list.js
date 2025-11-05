@@ -36,6 +36,20 @@ function formatDateTimeLocal(value) {
     return local.toISOString().slice(0, 16)
 }
 
+function resolveUniversityName(professor, state) {
+    if (!professor) return '未知学校'
+    const nested = Array.isArray(professor.universities)
+        ? professor.universities[0]
+        : professor.universities
+    if (nested?.name) {
+        return nested.name
+    }
+    const mapped = state?.universities?.get
+        ? state.universities.get(professor.university_id)
+        : null
+    return mapped?.name || '未知学校'
+}
+
 // 渲染导师卡片
 export function renderProfessorCard(professor, application, state) {
     const status = application?.status || '待发送'
@@ -49,7 +63,7 @@ export function renderProfessorCard(professor, application, state) {
         ? application.tags.filter(Boolean).slice(0, 3)
         : []
     const replySummary = application?.reply_summary ? escapeHtml(application.reply_summary) : ''
-    const uniName = professor.universities?.name || '未知学校'
+    const uniName = resolveUniversityName(professor, state)
 
     const researchAreas = Array.isArray(professor.research_areas)
         ? professor.research_areas.filter(Boolean)
@@ -309,7 +323,7 @@ export function openProfessorModal(professor, application, state) {
         <div class="modal-header">
             <div>
                 <h2 class="modal-title">${professor.name}</h2>
-                <p class="modal-subtitle">${professor.title || '未知职称'} · ${professor.universities?.name || '未知学校'}</p>
+                <p class="modal-subtitle">${professor.title || '未知职称'} · ${resolveUniversityName(professor, state)}</p>
             </div>
             <span class="status-badge status-${status}">${status}</span>
         </div>

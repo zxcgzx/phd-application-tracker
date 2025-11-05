@@ -13,6 +13,20 @@ const STATUS_SEQUENCE = [
     '已拒绝'
 ]
 
+function resolveUniversityName(professor, state) {
+    if (!professor) return '未知学校'
+    const nested = Array.isArray(professor.universities)
+        ? professor.universities[0]
+        : professor.universities
+    if (nested?.name) {
+        return nested.name
+    }
+    const mapped = state?.universities?.get
+        ? state.universities.get(professor.university_id)
+        : null
+    return mapped?.name || '未知学校'
+}
+
 export function calculateStats(state) {
     const stats = {
         total: state.professors.length,
@@ -64,7 +78,7 @@ export function calculateStats(state) {
                 break
         }
 
-        const uniName = prof.universities?.name || '未知学校'
+        const uniName = resolveUniversityName(prof, state)
         const uniStats = stats.byUniversity.get(uniName) || { total: 0, sent: 0, replied: 0 }
         uniStats.total++
         if (status !== '待发送') uniStats.sent++
