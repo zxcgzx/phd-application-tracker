@@ -14,8 +14,10 @@ class SupabaseSync:
 
     def __init__(self):
         """初始化 Supabase 客户端"""
-        supabase_url = os.getenv('SUPABASE_URL')
-        supabase_key = os.getenv('SUPABASE_SERVICE_KEY')
+        supabase_url = os.getenv('SUPABASE_URL') or 'https://cacvfqtupprixlmzrury.supabase.co'
+        supabase_key = os.getenv('SUPABASE_SERVICE_KEY') or (
+            os.getenv('SUPABASE_ANON_KEY')
+        ) or 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNhY3ZmcXR1cHByaXhsbXpydXJ5Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc2MjEzMjU5MywiZXhwIjoyMDc3NzA4NTkzfQ.hbqrmQKt5_Pjn6bAwxhik2v9KHsiTY-edwPjEtWn2fg'
 
         if not supabase_url or not supabase_key:
             raise ValueError(
