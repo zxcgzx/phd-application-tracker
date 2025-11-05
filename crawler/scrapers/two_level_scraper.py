@@ -80,6 +80,10 @@ class TwoLevelScraper(BaseScraper):
             if not href:
                 continue
 
+            # 过滤无效链接
+            if href == '#' or href.startswith('#'):
+                continue
+
             # 转换为绝对URL
             absolute_url = urljoin(self.base_url, href)
 
@@ -95,14 +99,26 @@ class TwoLevelScraper(BaseScraper):
 
             # 清理姓名（去除特殊字符）
             name = self.clean_text(name)
-            if name:
-                if absolute_url in seen_urls:
-                    continue
-                seen_urls.add(absolute_url)
-                professor_links.append({
-                    'name': name,
-                    'url': absolute_url
-                })
+            if not name:
+                continue
+
+            # 过滤非导师条目（如"视频介绍"等）
+            invalid_keywords = ['视频介绍', 'Video Introduction', '视频:', '简介:']
+            if any(keyword in name for keyword in invalid_keywords):
+                continue
+            # 过滤以"视频"或"简介"开头的条目
+            if name.startswith(('视频', '简介', 'Video', 'Introduction')):
+                continue
+
+            # 去重
+            if absolute_url in seen_urls:
+                continue
+            seen_urls.add(absolute_url)
+
+            professor_links.append({
+                'name': name,
+                'url': absolute_url
+            })
 
         return professor_links
 

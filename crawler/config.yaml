@@ -53,7 +53,7 @@ universities:
     list_page:
       container_selector: "ul.subLightYearsList li"  # 精确定位导师列表
       link_selector: "a"
-      name_selector: "a"
+      name_selector: "p"  # 姓名在p标签内
 
     detail_page:
       title:
