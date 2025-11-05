@@ -51,7 +51,7 @@ universities:
     update_frequency: "weekly"
 
     list_page:
-      container_selector: "ul li"  # 所有列表项
+      container_selector: "ul.subLightYearsList li"  # 精确定位导师列表
       link_selector: "a"
       name_selector: "a"
 
@@ -87,7 +87,7 @@ universities:
     update_frequency: "weekly"
 
     list_page:
-      container_selector: "ul li"  # 导师列表项
+      container_selector: "div.sz_js_nr li"
       link_selector: "a"
       name_selector: "a"
 

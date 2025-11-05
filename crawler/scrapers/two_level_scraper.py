@@ -62,11 +62,15 @@ class TwoLevelScraper(BaseScraper):
         containers = soup.select(container_selector)
 
         professor_links = []
+        seen_urls = set()
 
         for container in containers:
             # 提取链接和姓名
             link_selector = list_config.get('link_selector', 'a')
             link_elem = container.select_one(link_selector)
+
+            if not link_elem and container.name == 'a':
+                link_elem = container
 
             if not link_elem:
                 continue
@@ -81,15 +85,20 @@ class TwoLevelScraper(BaseScraper):
 
             # 获取姓名
             name_selector = list_config.get('name_selector', 'a')
-            if name_selector == link_selector:
+            if name_selector == link_selector or link_elem is container:
                 name = link_elem.get_text(strip=True)
             else:
                 name_elem = container.select_one(name_selector)
+                if not name_elem and container.name == 'a':
+                    name_elem = container
                 name = name_elem.get_text(strip=True) if name_elem else '未知'
 
             # 清理姓名（去除特殊字符）
             name = self.clean_text(name)
             if name:
+                if absolute_url in seen_urls:
+                    continue
+                seen_urls.add(absolute_url)
                 professor_links.append({
                     'name': name,
                     'url': absolute_url
