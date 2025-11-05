@@ -281,8 +281,31 @@ class BaseScraper:
                 if areas:
                     break
 
+        # 去重
         deduped = list(dict.fromkeys(areas))
-        return deduped[:10]  # 最多返回10个研究方向
+
+        # 过滤明显不是研究方向的内容（导航菜单、通用标签等）
+        invalid_patterns = [
+            r'^(研究生|本科生|博士|硕士|学士).*?(教育|招生|培养)',  # 教育相关
+            r'^科学研究',  # 科研概况
+            r'^(科研|教学|学术).*?(概况|平台|项目|成果|沙龙)',  # 科研平台项目
+            r'研究所$',  # 以"研究所"结尾（机构名称）
+            r'^(首页|关于|师资|合作|党群|学生|联系)',  # 导航菜单
+            r'^(电工|电力|电子|电气|电能).*?(教学中心|研究所)',  # 机构名称
+            r'(主任|副主任|秘书)',  # 职务
+        ]
+
+        filtered = []
+        for area in deduped:
+            # 跳过太短的
+            if len(area) < 3:
+                continue
+            # 检查是否匹配无效模式
+            is_invalid = any(re.search(pattern, area) for pattern in invalid_patterns)
+            if not is_invalid:
+                filtered.append(area)
+
+        return filtered[:10]  # 最多返回10个研究方向
 
     def clean_text(self, text: Optional[str]) -> Optional[str]:
         """

@@ -64,12 +64,8 @@ universities:
       research_areas:
         - keywords: ["研究方向", "Focus Area", "研究领域"]
           extract_method: "parent_text"
-        - pattern: true
-          keywords: ["研究方向", "Focus Area"]
-        # 提取"Ø"符号标记的研究方向列表
-        - selector_all: "p:contains('研究方向') ~ p, p:contains('Focus Area') ~ p"
+        # 优先提取"研究方向"标题后的ul>li列表
         - selector_all: "p:contains('研究方向') ~ ul li, p:contains('Focus Area') ~ ul li"
-        - selector_all: "ul li:contains('研究'), ol li:contains('研究')"
 
       office:
         - keywords: ["办公地址", "办公室", "Office"]
