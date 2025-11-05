@@ -102,6 +102,102 @@
                         </select>
                         <button id="batch-mode-btn" class="secondary-btn">批量操作</button>
                         <button id="create-professor-btn" class="primary-btn">新建导师</button>
+                        <button id="advanced-filter-toggle" class="secondary-btn">
+                            <span id="advanced-filter-icon">▼</span> 高级筛选
+                        </button>
+                    </div>
+
+                    <div id="advanced-filters" class="advanced-filters hidden">
+                        <div class="advanced-filters-grid">
+                            <div class="filter-group">
+                                <label class="filter-label">时间范围</label>
+                                <select id="filter-time-range" class="filter-input-small">
+                                    <option value="">不限</option>
+                                    <option value="sent_7d">最近7天已发送</option>
+                                    <option value="sent_30d">最近30天已发送</option>
+                                    <option value="no_followup_7d">7天未跟进</option>
+                                    <option value="no_followup_30d">30天未跟进</option>
+                                    <option value="replied_7d">最近7天已回复</option>
+                                    <option value="replied_30d">最近30天已回复</option>
+                                </select>
+                            </div>
+
+                            <div class="filter-group">
+                                <label class="filter-label">优先级</label>
+                                <div class="filter-range">
+                                    <select id="filter-priority-min" class="filter-input-tiny">
+                                        <option value="">最低</option>
+                                        <option value="1">1⭐</option>
+                                        <option value="2">2⭐</option>
+                                        <option value="3">3⭐</option>
+                                        <option value="4">4⭐</option>
+                                        <option value="5">5⭐</option>
+                                    </select>
+                                    <span>至</span>
+                                    <select id="filter-priority-max" class="filter-input-tiny">
+                                        <option value="">最高</option>
+                                        <option value="1">1⭐</option>
+                                        <option value="2">2⭐</option>
+                                        <option value="3">3⭐</option>
+                                        <option value="4">4⭐</option>
+                                        <option value="5">5⭐</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div class="filter-group">
+                                <label class="filter-label">匹配度</label>
+                                <div class="filter-range">
+                                    <select id="filter-match-min" class="filter-input-tiny">
+                                        <option value="">最低</option>
+                                        <option value="1">1⭐</option>
+                                        <option value="2">2⭐</option>
+                                        <option value="3">3⭐</option>
+                                        <option value="4">4⭐</option>
+                                        <option value="5">5⭐</option>
+                                    </select>
+                                    <span>至</span>
+                                    <select id="filter-match-max" class="filter-input-tiny">
+                                        <option value="">最高</option>
+                                        <option value="1">1⭐</option>
+                                        <option value="2">2⭐</option>
+                                        <option value="3">3⭐</option>
+                                        <option value="4">4⭐</option>
+                                        <option value="5">5⭐</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div class="filter-group">
+                                <label class="filter-label">跟进提醒</label>
+                                <select id="filter-followup-status" class="filter-input-small">
+                                    <option value="">全部</option>
+                                    <option value="has_reminder">有跟进提醒</option>
+                                    <option value="no_reminder">无跟进提醒</option>
+                                    <option value="overdue">逾期未跟进</option>
+                                    <option value="upcoming">即将到期</option>
+                                </select>
+                            </div>
+
+                            <div class="filter-group filter-group-full">
+                                <label class="filter-label">标签（逗号分隔）</label>
+                                <input
+                                    type="text"
+                                    id="filter-tags"
+                                    class="filter-input-small"
+                                    placeholder="例如：重点关注, 保底"
+                                >
+                                <label class="filter-checkbox">
+                                    <input type="checkbox" id="filter-tags-and">
+                                    <span>匹配所有标签（AND）</span>
+                                </label>
+                            </div>
+                        </div>
+
+                        <div class="advanced-filters-actions">
+                            <button id="apply-advanced-filters" class="primary-btn-sm">应用筛选</button>
+                            <button id="reset-advanced-filters" class="secondary-btn-sm">重置</button>
+                        </div>
                     </div>
                 </div>
 

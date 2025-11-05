@@ -32,6 +32,7 @@ import {
     updateBatchSelectionView,
     closeModal
 } from './features/professors/view.js'
+import { initAdvancedFilters } from './features/professors/advanced-filters.js'
 
 const DEFAULT_PAGE_SIZE = 24
 const STATUS_NEEDS_SENT_AT = new Set(['已发送', '已读', '已回复', '待面试', '已接受', '已拒绝'])
@@ -470,6 +471,9 @@ function bindEvents() {
             closeModal()
         }
     })
+
+    // 初始化高级筛选
+    initAdvancedFilters()
 }
 
 // 切换 Tab

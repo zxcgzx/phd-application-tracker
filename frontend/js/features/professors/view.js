@@ -5,9 +5,11 @@
 
 import { renderProfessorCard, openProfessorModal } from '../../components/professor-list.js'
 import { showToast } from '../../core/feedback.js'
+import { applyAdvancedFiltersToList } from './advanced-filters.js'
 
 export function getFilteredProfessors(state) {
-    return state.professors.filter(professor => {
+    // 第一步：应用基本筛选
+    let filtered = state.professors.filter(professor => {
         const application = state.applications.get(professor.id)
 
         if (state.filters.university && professor.university_id !== state.filters.university) {
@@ -40,6 +42,11 @@ export function getFilteredProfessors(state) {
 
         return true
     })
+
+    // 第二步：应用高级筛选
+    filtered = applyAdvancedFiltersToList(filtered)
+
+    return filtered
 }
 
 export function renderProfessorsList(state, options = {}) {
