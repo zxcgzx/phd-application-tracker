@@ -95,8 +95,8 @@
     <script>
         // Supabase 配置
         // ✅ 可通过在页面加载前设置 window.__SUPABASE_CONFIG__ 来复用主站配置
-        const SUPABASE_URL = window.__SUPABASE_CONFIG__?.url ?? 'YOUR_SUPABASE_URL'
-        const SUPABASE_ANON_KEY = window.__SUPABASE_CONFIG__?.anonKey ?? 'YOUR_SUPABASE_ANON_KEY'
+        const SUPABASE_URL = window.__SUPABASE_CONFIG__?.url ?? 'https://cacvfqtupprixlmzrury.supabase.co'
+        const SUPABASE_ANON_KEY = window.__SUPABASE_CONFIG__?.anonKey ?? 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNhY3ZmcXR1cHByaXhsbXpydXJ5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjIxMzI1OTMsImV4cCI6MjA3NzcwODU5M30.tEm33FremWW86fPhlUiU2_ZQ4sq5PklaAt5ZkxRNm4I'
 
         const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
 
@@ -119,9 +119,9 @@
             // 1. 检查配置
             addResult('\n1️⃣ 检查 Supabase 配置...', 'info')
             addResult(`URL: ${SUPABASE_URL}`, 'info')
-            addResult(`Key: ${SUPABASE_ANON_KEY === 'YOUR_SUPABASE_ANON_KEY' ? '未设置' : SUPABASE_ANON_KEY.substring(0, 20) + '...'}`, 'info')
+            addResult(`Key: ${SUPABASE_ANON_KEY.substring(0, 20)}...`, 'info')
 
-            if (SUPABASE_URL === 'YOUR_SUPABASE_URL' || SUPABASE_ANON_KEY === 'YOUR_SUPABASE_ANON_KEY') {
+            if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
                 addResult('\n❌ 未提供有效的 Supabase URL 或 Key，请先在 debug.html 内部或通过 window.__SUPABASE_CONFIG__ 提供配置。', 'error')
                 return
             }
