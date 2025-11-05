@@ -112,8 +112,36 @@
                         已选择 <span id="selected-count" class="batch-count">0</span> 位导师
                     </span>
                     <div class="batch-actions">
-                        <button id="batch-mark-sent" class="toolbar-btn primary">标记为已发送</button>
-                        <button id="batch-export" class="toolbar-btn">导出选中</button>
+                        <div class="batch-dropdown">
+                            <button id="batch-status-btn" class="toolbar-btn dropdown-btn">
+                                修改状态 ▾
+                            </button>
+                            <div id="batch-status-menu" class="batch-dropdown-menu">
+                                <button data-status="待发送" class="batch-menu-item">待发送</button>
+                                <button data-status="已发送" class="batch-menu-item">已发送</button>
+                                <button data-status="已读" class="batch-menu-item">已读</button>
+                                <button data-status="已回复" class="batch-menu-item">已回复</button>
+                                <button data-status="待面试" class="batch-menu-item">待面试</button>
+                                <button data-status="已接受" class="batch-menu-item">已接受</button>
+                                <button data-status="已拒绝" class="batch-menu-item">已拒绝</button>
+                            </div>
+                        </div>
+                        <div class="batch-dropdown">
+                            <button id="batch-priority-btn" class="toolbar-btn dropdown-btn">
+                                设置优先级 ▾
+                            </button>
+                            <div id="batch-priority-menu" class="batch-dropdown-menu">
+                                <button data-priority="5" class="batch-menu-item">⭐⭐⭐⭐⭐ 最高</button>
+                                <button data-priority="4" class="batch-menu-item">⭐⭐⭐⭐ 高</button>
+                                <button data-priority="3" class="batch-menu-item">⭐⭐⭐ 中</button>
+                                <button data-priority="2" class="batch-menu-item">⭐⭐ 低</button>
+                                <button data-priority="1" class="batch-menu-item">⭐ 最低</button>
+                            </div>
+                        </div>
+                        <button id="batch-followup-btn" class="toolbar-btn">安排跟进</button>
+                        <button id="batch-tags-btn" class="toolbar-btn">添加标签</button>
+                        <button id="batch-export" class="toolbar-btn">导出</button>
+                        <button id="batch-delete" class="toolbar-btn danger">删除</button>
                         <button id="batch-cancel" class="toolbar-btn subtle">取消</button>
                     </div>
                 </div>
