@@ -1,9 +1,9 @@
-name: Weekly Crawler
+name: Daily Crawler
 
 on:
   schedule:
-    # 每周日凌晨 3:00 UTC (北京时间 11:00)
-    - cron: '0 3 * * 0'
+    # 每天凌晨 3:00 UTC (北京时间 11:00)
+    - cron: '0 3 * * *'
   workflow_dispatch:  # 支持手动触发
 
 jobs:
